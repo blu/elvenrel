@@ -135,7 +135,7 @@ const char *str_from_st_shndx(
 	return "<unknown section>";
 }
 
-/* Load 64-bit ELF symbol table
+/* Process 64-bit ELF symbol table
 */
 static int
 	_load_elf64_symbol_table(
@@ -151,7 +151,6 @@ static int
 		return -1;
 	}
 
-	/* Allocate the array of ElfSymbol objects */
 	n_symbols = (details->ed_shdrs[details->ed_symtab_idx]->sh_size) / sizeof(Elf64_Sym);
 	if (n_symbols == 0) {
 		return -1;
@@ -355,7 +354,7 @@ static int
 		return -1;
 	}
 
-	/* Create the symbol table from the ELF .symtab section */
+	/* Process the symbol table from the ELF .symtab section */
 	rc = _load_elf64_symbol_table(details);
 	if (rc) return rc;
 
