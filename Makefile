@@ -10,7 +10,7 @@ $(TARGET): $(SRC)
 $(REL): $(REL:%.o=%.s)
 	$(AS) $< -o $@ --strip-local-absolute
 
-all: $(TARGET) test.o
+all: $(TARGET) $(REL)
 
 clean:
 	rm $(TARGET) $(REL)

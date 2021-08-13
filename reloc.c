@@ -9,6 +9,7 @@
 #include <string.h>
 #include <libelf.h>
 #include <fcntl.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <errno.h>
 #include <unistd.h>
@@ -35,6 +36,7 @@ typedef struct ElfDetails_s {
 	uint64              ed_n_elf_scns;   /* Number of ELF sections         */
 
 	Elf64_Section       ed_text_idx;     /* .text section index            */
+	Elf64_Section       ed_rodata_idx;   /* .rodata section index          */
 	Elf64_Section       ed_rel_text_idx; /* .rel.text section index        */
 	Elf64_Section       ed_rela_text_idx;/* .rela.text section index       */
 	Elf64_Section       ed_symtab_idx;   /* .symtab section index          */
@@ -188,7 +190,8 @@ static int
 static int
 	_load_elf_file_details(
 		Elf*                elf,
-		ElfDetails*         ret_details)
+		ElfDetails*         ret_details,
+		ptrdiff_t           diff_exec)
 {
 	ElfDetails details;
 	char* ehdr_ident;
@@ -275,18 +278,29 @@ static int
 			if (shdr64->sh_type != SHT_PROGBITS) {
 				return -1;
 			}
-			/* Validate there is only 1 .text section */
+			/* Validate there is only one .text section */
 			if (details->ed_text_idx != 0) {
 				return -1;
 			}
 			details->ed_text_idx = scn_idx;
 		}
 
+		if (strcmp(scn_name,".rodata") == 0) {
+			if (shdr64->sh_type != SHT_PROGBITS) {
+				return -1;
+			}
+			/* Validate there is only one .rodata section */
+			if (details->ed_rodata_idx != 0) {
+				return -1;
+			}
+			details->ed_rodata_idx = scn_idx;
+		}
+
 		if (strcmp(scn_name,".rel.text") == 0) {
 			if (shdr64->sh_type != SHT_REL) {
 				return -1;
 			}
-			/* Validate there is only 1 .rel.text section */
+			/* Validate there is only one .rel.text section */
 			if (details->ed_rel_text_idx != 0) {
 				return -1;
 			}
@@ -297,7 +311,7 @@ static int
 			if (shdr64->sh_type != SHT_RELA) {
 				return -1;
 			}
-			/* Validate there is only 1 .rel.text section */
+			/* Validate there is only one .rel.text section */
 			if (details->ed_rela_text_idx != 0) {
 				return -1;
 			}
@@ -307,7 +321,7 @@ static int
 			if (shdr64->sh_type != SHT_SYMTAB) {
 				return -1;
 			}
-			/* Validate there is only 1 .symtab section */
+			/* Validate there is only one .symtab section */
 			if (details->ed_symtab_idx != 0) {
 				return -1;
 			}
@@ -317,7 +331,7 @@ static int
 			if (shdr64->sh_type != SHT_STRTAB) {
 				return -1;
 			}
-			/* Validate there is only 1 .strtab section */
+			/* Validate there is only one .strtab section */
 			if (details->ed_strtab_idx != 0) {
 				return -1;
 			}
@@ -327,7 +341,7 @@ static int
 			if (shdr64->sh_type != SHT_STRTAB) {
 				return -1;
 			}
-			/* Validate there is only 1 .shstrtab section */
+			/* Validate there is only one .shstrtab section */
 			if (details->ed_shstrtab_idx != scn_idx) {
 				return -1;
 			}
@@ -342,6 +356,11 @@ static int
 				return -1;
 			}
 			shdr64->sh_addr = (Elf64_Addr)data->d_buf;
+
+			if (scn_idx == details->ed_text_idx ||
+			    scn_idx == details->ed_rodata_idx) {
+				shdr64->sh_addr += diff_exec;
+			}
 		}
 	}
 
@@ -387,7 +406,8 @@ static int
 static int
 	relocate_elf_load_cu(
 		Elf* elf,
-		void** start)
+		void** start,
+		ptrdiff_t diff_exec)
 {
 	ElfDetails details = NULL;
 	Elf64_Sym* symtab;
@@ -395,7 +415,7 @@ static int
 	int rc;
 
 	/* Load ELF file section and symbol tables */
-	rc = _load_elf_file_details(elf, &details);
+	rc = _load_elf_file_details(elf, &details, diff_exec);
 	if (rc)
 		goto term;
 
@@ -418,7 +438,7 @@ static int
 		else {
 			name = elf_strptr(details->ed_elf, details->ed_strtab_idx, symtab->st_name);
 
-			if (!strcmp(name, "_start") && !strcmp(str_from_st_shndx(symtab->st_shndx, elf), ".text")) {
+			if (symtab->st_shndx == details->ed_text_idx && !strcmp(name, "_start")) {
 				*start = (void *)symtab->st_value;
 			}
 		}
@@ -457,7 +477,7 @@ int main(int argc, char** argv)
 {
 	int fd;
 	struct stat sb;
-	void *p, *start = NULL;
+	void *p, *q, *start = NULL;
 	int rc;
 	Elf *elf;
 
@@ -481,14 +501,20 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
+	/* Get two distinct mappings to the same file -- 1st to be used for
+	   writable sections, 2nd -- for the read-only/exec sections; pass
+	   the 1st mapping to the ELF parser, but also make it aware of the
+	   2nd mapping via a ptrdiff */
 	p = mmap(NULL, sb.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
+	q = mmap(NULL, sb.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
 	close(fd);
 
-	if (p == MAP_FAILED) {
+	if (p == MAP_FAILED || q == MAP_FAILED) {
 		fprintf(stderr, "error: cannot mmap file\n");
 		return -1;
 	}
 
+	/* Process ELF via the 1st mapping */
 	elf = elf_memory(p, sb.st_size);
 
 	if (elf == NULL) {
@@ -496,14 +522,14 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	rc = relocate_elf_load_cu(elf, &start);
+	rc = relocate_elf_load_cu(elf, &start, q - p);
 
 	if (rc) {
 		fprintf(stderr, "error: cannot relocate_elf_load_cu\n");
 		return -1;
 	}
 
-	rc = mprotect(p, sb.st_size, PROT_READ | PROT_EXEC);
+	rc = mprotect(q, sb.st_size, PROT_READ | PROT_EXEC);
 
 	if (rc) {
 		fprintf(stderr, "error: cannot mprotect\n");
