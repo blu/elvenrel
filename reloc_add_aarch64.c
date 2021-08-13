@@ -559,7 +559,7 @@ int apply_relocate_add(Elf64_Shdr **sechdrs,
 					     AARCH64_INSN_IMM_26);
 			break;
 		default:
-			fprintf(stderr, "unsupported RELA relocation: %llu\n",
+			fprintf(stderr, "unsupported RELA relocation: %lu\n",
 			       ELF64_R_TYPE(rel[i].r_info));
 			return -ENOEXEC;
 		}
@@ -571,7 +571,7 @@ int apply_relocate_add(Elf64_Shdr **sechdrs,
 	return 0;
 
 overflow:
-	fprintf(stderr, "overflow in relocation type %d val %Lx\n",
+	fprintf(stderr, "overflow in relocation type %d val %lx\n",
 	       (int)ELF64_R_TYPE(rel[i].r_info), val);
 	return -ENOEXEC;
 }

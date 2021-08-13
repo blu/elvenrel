@@ -142,7 +142,6 @@ static int
 		ElfDetails details)
 {
 	Elf* elf;
-	Elf64_Shdr* shdr64;
 	Elf64_Sym* symtab;
 	uint64 n_symbols, i;
 
@@ -370,6 +369,10 @@ static int
 	_load_elf_term(
 		ElfDetails details)
 {
+	if (details == NULL) {
+		return 0;
+	}
+
 	if (details->ed_shdrs != NULL) {
 		free(details->ed_shdrs);
 	}
@@ -386,7 +389,7 @@ static int
 		Elf* elf,
 		void** start)
 {
-	ElfDetails details;
+	ElfDetails details = NULL;
 	Elf64_Sym* symtab;
 	uint64 n_symbols, i;
 	int rc;
@@ -420,7 +423,7 @@ static int
 			}
 		}
 
-		printf("%2d: %016x %-13s %-14s %-17s %s\n",
+		printf("%2ld: %016lx %-13s %-14s %-17s %s\n",
 			i,
 			symtab->st_value,
 			str_from_st_type(ELF64_ST_TYPE(symtab->st_info)),

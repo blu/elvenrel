@@ -6,19 +6,19 @@ SRC=(
 	reloc.c
 	reloc_add_aarch64.c
 )
+TARGET=elvenrel
 CFLAGS=(
 	-std=c11
 	-Ofast
 	-DNDEBUG
-	-o elvenrel
 )
-LFLAGS=(
+LDFLAGS=(
 	-lelf
 )
 
 set -x
 
-${CC} ${SRC[@]} ${CFLAGS[@]} ${LFLAGS[@]}
+${CC} ${CFLAGS[@]} ${LDFLAGS[@]} ${SRC[@]} -o ${TARGET}
 
 # Provide an ELF REL sample
 ${AS} test.s -o test.o --strip-local-absolute

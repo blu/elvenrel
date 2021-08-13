@@ -2,7 +2,7 @@
 
 Elven Relativism -- relocation and execution of ELF relocatable objects (REL)
 
-Program loads a mutitude of ELF REL files (work in progress; currently only one
+Program loads a multitude of ELF REL files (work in progress; currently only one
 REL file is loaded and processed), resolves all relocations (currently only
 SHT_RELA) and if symbol `_start` in section `.text` is found, passes control to
 the former.
@@ -12,7 +12,7 @@ the former.
 * Handling of multiple REL files, with cross-REL relocations
 * Resolution of all (common) relocation types
 * Explicit (CLI) control over the mapping addresses of each REL (sub-page boundary?)
-* Explicit (CLI) control over the process VMAs before passig control to `_start`
+* Explicit (CLI) control over the process VMAs before passing control to `_start`
 
 ## Acknowledgements
 
