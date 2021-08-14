@@ -9,8 +9,8 @@ _start:
 	mov	x8, SYS_write
 	mov	x2, len
 	adr	x1, buf
-	ldr w3, =0x4c45525f
-	str w3, [x1, 13]
+	ldr	w3, =0x4c45525f
+	str	w3, [x1, 13]
 	mov	x0, STDOUT_FILENO
 	svc	0
 
