@@ -5,7 +5,7 @@ LDFLAGS += -lelf
 REL := test.o
 
 $(TARGET): $(SRC)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(filter %.c, $^) -o $(TARGET)
+	$(CC) $(filter %.c, $^) $(CFLAGS) $(LDFLAGS) -o $(TARGET)
 
 $(REL): $(REL:%.o=%.s)
 	$(AS) $< -o $@ --strip-local-absolute

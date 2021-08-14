@@ -18,7 +18,7 @@ LDFLAGS=(
 
 set -x
 
-${CC} ${CFLAGS[@]} ${LDFLAGS[@]} ${SRC[@]} -o ${TARGET}
+${CC} ${SRC[@]} ${CFLAGS[@]} ${LDFLAGS[@]} -o ${TARGET}
 
 # Provide an ELF REL sample
 ${AS} test.s -o test.o --strip-local-absolute
