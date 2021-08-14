@@ -20,7 +20,7 @@ int apply_relocate_add(Elf64_Shdr **sechdrs,
 					   unsigned int symsec,
 					   unsigned int relsec);
 
-/* Following code based on IBM s390 elf relocation sample */
+/* Following code based on IBM s390 ELF relocation sample */
 /* https://www.ibm.com/docs/en/zos/2.2.0?topic=file-example-relocating-addresses-within-elf */
 
 typedef uint64_t uint64;
@@ -253,7 +253,7 @@ static int
 	}
 	details->ed_shdrs = section_list;
 
-	/* Populate the ELF section lists */
+	/* Enumerate the ELF sections and compute their mapping addresses */
 	scn_idx = 0;
 	scn = NULL;
 
