@@ -2,15 +2,16 @@ SRC := reloc.c reloc_add_aarch64.c insn.h
 TARGET := elvenrel
 CFLAGS += -std=c11 -Ofast -DNDEBUG
 LDFLAGS += -lelf
-REL := test.o
+ASFLAGS += --strip-local-absolute
+REL := test.o test_data.o test_cross1.o test_cross2.o
 
 $(TARGET): $(SRC)
 	$(CC) $(filter %.c, $^) $(CFLAGS) $(LDFLAGS) -o $(TARGET)
 
-$(REL): $(REL:%.o=%.s)
-	$(AS) $< -o $@ --strip-local-absolute
+%.o: %.s
+	$(AS) $< -o $@ $(ASFLAGS)
 
 all: $(TARGET) $(REL)
 
 clean:
-	rm $(TARGET) $(REL)
+	rm -f $(TARGET) $(REL)
