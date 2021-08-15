@@ -137,6 +137,55 @@ const char *str_from_st_shndx(
 	return "<unknown section>";
 }
 
+/* Seek a symbol by name in a previously loaded REL; don't try to resolve section
+   names, as Elf64_Ehdr.e_shstrndx has been repurposed as e_strtabndx */
+static Elf64_Sym *seek_prev_symbol(Elf *elf, const char *name)
+{
+	Elf_Scn *scn;
+	Elf64_Shdr *shdr64;
+
+	if (elf == NULL) {
+		return NULL;
+	}
+
+	/* Enumerate the ELF sections, seeking for .symtab */
+	scn = NULL;
+
+	while ((scn = elf_nextscn(elf, scn)) != NULL) {
+		shdr64 = elf64_getshdr(scn);
+
+		if (shdr64->sh_type == SHT_SYMTAB) {
+			uint64 n_symbols, i;
+			Elf64_Sym *symtab;
+
+			n_symbols = shdr64->sh_size / sizeof(*symtab);
+
+			/* Process the .symtab section, skipping the first dummy */
+			symtab = (Elf64_Sym*)shdr64->sh_addr;
+			symtab++;
+
+			for (i = 1; i < n_symbols; i++, symtab++) {
+				if (symtab->st_shndx != SHN_UNDEF &&
+					ELF64_ST_TYPE(symtab->st_info) != STT_SECTION &&
+					ELF64_ST_BIND(symtab->st_info) == STB_GLOBAL) {
+					/* Elf64_Ehdr.e_shstrndx has been repurposed as e_strtabndx;
+					   getting a section name actually gives us a symbol name */
+					const char *sym_name = str_from_sh_name(symtab->st_name, elf);
+
+					if (strcmp(sym_name, name) == 0) {
+						return symtab;
+					}
+				}
+			}
+			/* More than one SHT_SYMTAB section is not supported */
+			break;
+		}
+	}
+
+	/* Fall back to earlier RELs */
+	return seek_prev_symbol((Elf *)elf64_getehdr(elf)->e_entry, name);
+}
+
 /* Process 64-bit ELF symbol table
 */
 static int
@@ -157,10 +206,11 @@ static int
 		return -1;
 	}
 
-	/* Process the .symtab section */
+	/* Process the .symtab section, skipping the first dummy */
 	symtab = (Elf64_Sym*)(details->ed_shdrs[details->ed_symtab_idx]->sh_addr);
+	symtab++;
 
-	for (i = 0; i < n_symbols; i++, symtab++) {
+	for (i = 1; i < n_symbols; i++, symtab++) {
 		if (ELF64_ST_TYPE(symtab->st_info) == STT_SECTION) {
 			/* Section symbols cannot index anything else but their respective sections */
 			if (symtab->st_shndx == SHN_UNDEF || symtab->st_shndx >= SHN_LORESERVE) {
@@ -179,6 +229,18 @@ static int
 			}
 
 			symtab->st_value += details->ed_shdrs[symtab->st_shndx]->sh_addr;
+		}
+		else if (symtab->st_shndx == SHN_UNDEF && ELF64_ST_BIND(symtab->st_info) == STB_GLOBAL) {
+			/* Seek undefined symbols from this REL in previous RELs */
+			const char *name = elf_strptr(elf, details->ed_strtab_idx, symtab->st_name);
+			const Elf64_Sym *prev_symtab = seek_prev_symbol((Elf *)elf64_getehdr(elf)->e_entry, name);
+
+			if (prev_symtab == NULL) {
+				fprintf(stderr, "error: undefined symbol '%s'\n", name);
+				return -1;
+			}
+
+			symtab->st_value = prev_symtab->st_value;
 		}
 	}
 
@@ -199,7 +261,7 @@ static int
 	Elf64_Shdr* shdr64;
 	Elf_Scn* scn;
 	Elf_Data* data;
-	char* scn_name;
+	const char* scn_name;
 	Elf64_Shdr** section_list;
 	uint64 scn_idx, n_elf_scns, shstrtab_idx;
 	int rc;
@@ -355,11 +417,14 @@ static int
 			if (shdr64->sh_size != data->d_size) {
 				return -1;
 			}
-			shdr64->sh_addr = (Elf64_Addr)data->d_buf;
+			/* Guard against empty .text sections which have a valid vaddr */
+			if (data->d_size != 0) {
+				shdr64->sh_addr = (Elf64_Addr)data->d_buf;
 
-			if (scn_idx == details->ed_text_idx ||
-			    scn_idx == details->ed_rodata_idx) {
-				shdr64->sh_addr += diff_exec;
+				if (scn_idx == details->ed_text_idx ||
+					scn_idx == details->ed_rodata_idx) {
+					shdr64->sh_addr += diff_exec;
+				}
 			}
 		}
 	}
@@ -438,7 +503,12 @@ static int
 		else {
 			name = elf_strptr(details->ed_elf, details->ed_strtab_idx, symtab->st_name);
 
-			if (symtab->st_shndx == details->ed_text_idx && !strcmp(name, "_start")) {
+			if (symtab->st_shndx == details->ed_text_idx && strcmp(name, "_start") == 0) {
+				if (*start != NULL) {
+					fprintf(stderr, "error: multiple _start\n");
+					rc = -1;
+					goto term;
+				}
 				*start = (void *)symtab->st_value;
 			}
 		}
@@ -466,6 +536,9 @@ static int
 				details->ed_rela_text_idx);
 	}
 
+	/* Repurpose Elf64_Ehdr.e_shstrndx as e_strtabndx */
+	elf64_getehdr(elf)->e_shstrndx = details->ed_strtab_idx;
+
 term:
 	/* Remove temporary tables */
 	_load_elf_term(details);
@@ -475,65 +548,75 @@ term:
 
 int main(int argc, char** argv)
 {
-	int fd;
-	struct stat sb;
-	void *p, *q, *start = NULL;
-	int rc;
-	Elf *elf;
+	Elf *prev_elf = NULL;
+	void *start = NULL;
+	int i;
 
-	if (argc != 2) {
-		printf("usage: %s <elf_rel>\n", argv[0]);
+	if (argc == 1) {
+		printf("usage: %s <elf_rel> ..\n", argv[0]);
 		return -1;
 	}
 
 	elf_version(EV_CURRENT);
 
-	fd = open(argv[1], O_RDONLY);
+	for (i = 1; i < argc; ++i) {
+		struct stat sb;
+		void *p, *q;
+		Elf *elf;
+		Elf64_Ehdr *ehdr64;
 
-	if (fd < 0) {
-		fprintf(stderr, "error: cannot open file\n");
-		return -1;
-	}
+		const int fd = open(argv[i], O_RDONLY);
 
-	if (fstat(fd, &sb) < 0) {
+		if (fd < 0) {
+			fprintf(stderr, "error: cannot open file\n");
+			return -1;
+		}
+
+		if (fstat(fd, &sb) < 0) {
+			close(fd);
+			fprintf(stderr, "error: cannot stat file\n");
+			return -1;
+		}
+
+		/* Get two distinct mappings to the same file -- 1st to be used for
+		   writable sections, 2nd -- for the read-only/exec sections; pass
+		   the 1st mapping to the ELF parser, but also make it aware of the
+		   2nd mapping via a ptrdiff */
+		p = mmap(NULL, sb.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
+		q = mmap(NULL, sb.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
 		close(fd);
-		fprintf(stderr, "error: cannot stat file\n");
-		return -1;
-	}
 
-	/* Get two distinct mappings to the same file -- 1st to be used for
-	   writable sections, 2nd -- for the read-only/exec sections; pass
-	   the 1st mapping to the ELF parser, but also make it aware of the
-	   2nd mapping via a ptrdiff */
-	p = mmap(NULL, sb.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
-	q = mmap(NULL, sb.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
-	close(fd);
+		if (p == MAP_FAILED || q == MAP_FAILED) {
+			fprintf(stderr, "error: cannot mmap file\n");
+			return -1;
+		}
 
-	if (p == MAP_FAILED || q == MAP_FAILED) {
-		fprintf(stderr, "error: cannot mmap file\n");
-		return -1;
-	}
+		/* Process ELF via the 1st mapping */
+		elf = elf_memory(p, sb.st_size);
 
-	/* Process ELF via the 1st mapping */
-	elf = elf_memory(p, sb.st_size);
+		if (elf == NULL) {
+			fprintf(stderr, "error: cannot elf_memory\n");
+			return -1;
+		}
 
-	if (elf == NULL) {
-		fprintf(stderr, "error: cannot elf_memory\n");
-		return -1;
-	}
+		/* Elf64_Ehdr.e_entry is nil in a REL -- repurpose it to
+		   form a linked list of all RELs loaded to this point */
+		if ((ehdr64 = elf64_getehdr(elf)) == NULL) {
+			return -1;
+		}
 
-	rc = relocate_elf_load_cu(elf, &start, q - p);
+		ehdr64->e_entry = (Elf64_Addr)prev_elf;
+		prev_elf = elf;
 
-	if (rc) {
-		fprintf(stderr, "error: cannot relocate_elf_load_cu\n");
-		return -1;
-	}
+		if (relocate_elf_load_cu(elf, &start, q - p)) {
+			fprintf(stderr, "error: cannot relocate_elf_load_cu\n");
+			return -1;
+		}
 
-	rc = mprotect(q, sb.st_size, PROT_READ | PROT_EXEC);
-
-	if (rc) {
-		fprintf(stderr, "error: cannot mprotect\n");
-		return -1;
+		if (mprotect(q, sb.st_size, PROT_READ | PROT_EXEC)) {
+			fprintf(stderr, "error: cannot mprotect\n");
+			return -1;
+		}
 	}
 
 	if (start != NULL)
