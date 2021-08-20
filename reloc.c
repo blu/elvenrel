@@ -192,8 +192,8 @@ static int
 	_load_elf64_symbol_table(
 		ElfDetails details)
 {
-	Elf* elf;
-	Elf64_Sym* symtab;
+	Elf *elf;
+	Elf64_Sym *symtab;
 	uint64 n_symbols, i;
 
 	elf = details->ed_elf;
@@ -201,7 +201,7 @@ static int
 		return -1;
 	}
 
-	n_symbols = (details->ed_shdrs[details->ed_symtab_idx]->sh_size) / sizeof(Elf64_Sym);
+	n_symbols = (details->ed_shdrs[details->ed_symtab_idx]->sh_size) / sizeof(*symtab);
 	if (n_symbols == 0) {
 		return -1;
 	}
@@ -251,18 +251,18 @@ static int
 */
 static int
 	_load_elf_file_details(
-		Elf*                elf,
-		ElfDetails*         ret_details,
-		ptrdiff_t           diff_exec)
+		Elf *elf,
+		ElfDetails *ret_details,
+		ptrdiff_t diff_exec)
 {
 	ElfDetails details;
-	char* ehdr_ident;
-	Elf64_Ehdr* ehdr64;
-	Elf64_Shdr* shdr64;
-	Elf_Scn* scn;
-	Elf_Data* data;
-	const char* scn_name;
-	Elf64_Shdr** section_list;
+	char *ehdr_ident;
+	Elf64_Ehdr *ehdr64;
+	Elf64_Shdr *shdr64;
+	Elf_Scn *scn;
+	Elf_Data *data;
+	const char *scn_name;
+	Elf64_Shdr **section_list;
 	uint64 scn_idx, n_elf_scns, shstrtab_idx;
 	int rc;
 
@@ -298,7 +298,7 @@ static int
 		return -1;
 	}
 
-	details = (ElfDetails) calloc(sizeof(struct ElfDetails_s), 1);
+	details = (ElfDetails) calloc(sizeof(*details), 1);
 	if (details == NULL) {
 		return -2; /* out of memory */
 	}
@@ -309,7 +309,7 @@ static int
 	details->ed_shstrtab_idx = shstrtab_idx;
 
 	/* Allocate list object (array of Elf64_Shdr*) for the ELF sections */
-	section_list = (Elf64_Shdr**) calloc(sizeof(Elf64_Shdr*), n_elf_scns);
+	section_list = (Elf64_Shdr**) calloc(sizeof(*section_list), n_elf_scns);
 	if (section_list == NULL) {
 		return -2; /* out of memory */
 	}
@@ -470,12 +470,12 @@ static int
 */
 static int
 	relocate_elf_load_cu(
-		Elf* elf,
-		void** start,
+		Elf *elf,
+		void **start,
 		ptrdiff_t diff_exec)
 {
 	ElfDetails details = NULL;
-	Elf64_Sym* symtab;
+	Elf64_Sym *symtab;
 	uint64 n_symbols, i;
 	int rc;
 
@@ -487,12 +487,12 @@ static int
 	/* Print all symbols, except the first dummy */
 	symtab = (Elf64_Sym*)(details->ed_shdrs[details->ed_symtab_idx]->sh_addr);
 	symtab++;
-	n_symbols = (details->ed_shdrs[details->ed_symtab_idx]->sh_size) / sizeof(Elf64_Sym);
+	n_symbols = (details->ed_shdrs[details->ed_symtab_idx]->sh_size) / sizeof(*symtab);
 
 	printf("    symtab_value____ symtab_type__ symtab_bind___ symtab_section___ symtab_name__\n");
 
 	for (i = 1; i < n_symbols; i++, symtab++) {
-		const char* name = "_____________";
+		const char *name = "_____________";
 
 		/* Resolve the symbol name */
 		if (symtab->st_name == 0) {
@@ -546,7 +546,7 @@ term:
 	return rc;
 }
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
 	Elf *prev_elf = NULL;
 	void *start = NULL;
