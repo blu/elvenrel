@@ -8,7 +8,6 @@ Program loads a multitude of ELF REL files, resolves all relocations (currently 
 
 * Resolution of all (common) relocation types
 * Explicit (CLI) control over the mapping addresses of each REL
-* Explicit (CLI) control over the process VMAs before passing control to `_start`
 
 ## Acknowledgements
 
