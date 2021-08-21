@@ -16,6 +16,7 @@ Files used, with or without modifications, from external repositories:
 
 	linux.org/ arch/arm64/include/asm/insn.h -> insn.h
 	linux.org/ arch/arm64/kernel/module.c    -> reloc_add_aarch64.c
+	linux.org/ arch/arm64/lib/strlen.S       -> strlen_linux.s
 
 ## Building
 

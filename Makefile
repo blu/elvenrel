@@ -1,17 +1,22 @@
-SRC := reloc.c reloc_add_aarch64.c insn.h
+SRC := reloc.c reloc_add_aarch64.c insn.h stringx.s strlen_linux.s vma.cpp vma.h
 TARGET := elvenrel
 CFLAGS += -std=c11 -Ofast -DNDEBUG
+CXXFLAGS += -std=c++11 -Ofast -fno-exceptions -fno-rtti -DNDEBUG
 LDFLAGS += -lelf
 ASFLAGS += --strip-local-absolute
+# Optional test objects built by target ALL
 REL := test_rodata.o test_data.o test_cross1.o test_cross2.o
 
-$(TARGET): $(SRC)
-	$(CC) $(filter %.c, $^) $(CFLAGS) $(LDFLAGS) -o $(TARGET)
+OBJ := $(addsuffix .o, $(basename $(filter %.s %.c %.cpp, $(SRC))))
 
-%.o: %.s
-	$(AS) $< -o $@ $(ASFLAGS)
+$(TARGET): $(OBJ)
+	$(CC) $^ $(LDFLAGS) -o $(TARGET)
+
+reloc_add_aarch64.o: reloc_add_aarch64.c insn.h
+
+vma.o: vma.cpp vma.h
 
 all: $(TARGET) $(REL)
 
 clean:
-	rm -f $(TARGET) $(REL)
+	rm -f $(TARGET) $(OBJ) $(REL)

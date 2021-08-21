@@ -16,6 +16,8 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 
+#include "vma.h"
+
 int apply_relocate_add(Elf64_Shdr **sechdrs,
 					   unsigned int symsec,
 					   unsigned int relsec);
@@ -546,26 +548,67 @@ term:
 	return rc;
 }
 
+static void print_usage(char **argv)
+{
+	printf("usage: %s <elf_rel_file> [<elf_rel_file>] ..\n"
+	       "\t--filter <string> : filter file mappings containing the specified string\n"
+	       "\t--help            : this message\n", argv[0]);
+}
+
 int main(int argc, char **argv)
 {
+	size_t areas_capacity = 0, objs_capacity = 0;
+	struct char_ptr_arr_t areas = { .count = 0, .arr = NULL };
+	struct char_ptr_arr_t objs = { .count = 0, .arr = NULL };
 	Elf *prev_elf = NULL;
 	void *start = NULL;
-	int i;
+	size_t i;
 
 	if (argc == 1) {
-		printf("usage: %s <elf_rel> ..\n", argv[0]);
+		print_usage(argv);
+		return -1;
+	}
+
+	for (i = 1; i < argc; ++i) {
+		if (!strcmp(argv[i], "--help")) {
+			print_usage(argv);
+			return 0;
+		}
+
+		if (!strcmp(argv[i], "--filter")) {
+			if (++i == argc) {
+				print_usage(argv);
+				return -1;
+			}
+			if (areas.count == areas_capacity) {
+				areas.arr = (char **)realloc(areas.arr, areas_capacity = (areas_capacity + 1) * 2);
+			}
+			areas.arr[areas.count++] = argv[i];
+			continue;
+		}
+
+		/* Unprefixed arg must be a file */
+		if (objs.count == objs_capacity) {
+			objs.arr = (char **)realloc(objs.arr, objs_capacity = (objs_capacity + 1) * 2);
+		}
+
+		objs.arr[objs.count++] = argv[i];
+	}
+
+	if (objs.count == 0) {
+		print_usage(argv);
 		return -1;
 	}
 
 	elf_version(EV_CURRENT);
 
-	for (i = 1; i < argc; ++i) {
+	for (i = 0; i < objs.count; ++i) {
 		struct stat sb;
 		void *p, *q;
 		Elf *elf;
 		Elf64_Ehdr *ehdr64;
 
-		const int fd = open(argv[i], O_RDONLY);
+		const int fd = open(objs.arr[i], O_RDONLY);
 
 		if (fd < 0) {
 			fprintf(stderr, "error: cannot open file\n");
@@ -618,6 +661,9 @@ int main(int argc, char **argv)
 			return -1;
 		}
 	}
+
+	if (areas.count && areas.arr != NULL)
+		vma_process(&areas);
 
 	if (start != NULL)
 		((void (*)(void))start)();
