@@ -12,6 +12,8 @@ OBJ := $(addsuffix .o, $(basename $(filter %.s %.c %.cpp, $(SRC))))
 $(TARGET): $(OBJ)
 	$(CC) $^ $(LDFLAGS) -o $(TARGET)
 
+reloc.o: reloc.c vma.h
+
 reloc_add_aarch64.o: reloc_add_aarch64.c insn.h
 
 vma.o: vma.cpp vma.h
