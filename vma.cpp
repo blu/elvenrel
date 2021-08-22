@@ -237,7 +237,7 @@ class vma_set_t {
 			const size_t old_size = sizeof(*pool) * capa;
 			capa += capa;
 			const size_t new_size = sizeof(*pool) * capa;
-			pool = (char *)sys::mremap(pool, old_size, new_size, flag_move, NULL);
+			pool = (char *)sys::mremap(pool, old_size, new_size, flag_move, nullptr);
 
 			if (pool == MAP_FAILED) {
 				fprintf(stderr, "error: cannot mremap char pool\n");
@@ -249,7 +249,7 @@ class vma_set_t {
 			const size_t old_size = sizeof(*vma) * depth;
 			depth += depth;
 			const size_t new_size = sizeof(*vma) * depth;
-			vma = (vma_t *)sys::mremap(vma, old_size, new_size, flag_move, NULL);
+			vma = (vma_t *)sys::mremap(vma, old_size, new_size, flag_move, nullptr);
 
 			if (vma == MAP_FAILED) {
 				fprintf(stderr, "error: cannot mremap entries array\n");
@@ -434,7 +434,7 @@ int vma_set_t::read_from_proc()
 
 void vma_process(struct char_ptr_arr_t *areas)
 {
-	assert(areas != NULL);
+	assert(areas != nullptr);
 
 	vma_set_t vma;
 	vma.read_from_proc();
