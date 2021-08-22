@@ -35,6 +35,7 @@ extern "C" {
 #define FILENO_STDOUT 1
 #define FILENO_STDERR 2
 
+#define SYS_mremap    0x19 //  25
 #define SYS_write     0x40 //  64
 #define SYS_exit      0x5d //  93
 #define SYS_munmap    0xd7 // 215
@@ -81,6 +82,25 @@ static int munmap(void *addr, size_t length)
 		: "+r" (x0)
 		: "r" (x1)
 		: "x2", "x3", "x4", "x5", "x8", "memory");
+
+	return x0;
+}
+
+static intptr_t mremap(
+	void *addr, size_t old_length, size_t new_length, int flags, void *new_addr)
+{
+	register uint64_t x0 asm ("x0") = (uintptr_t)addr;
+	register uint64_t x1 asm ("x1") = old_length;
+	register uint64_t x2 asm ("x2") = new_length;
+	register uint64_t x3 asm ("x3") = flags;
+	register uint64_t x4 asm ("x4") = (uintptr_t)new_addr;
+
+	asm volatile (
+		"mov	x8, " xstr(SYS_mremap) "\n\t"
+		"svc	0"
+		: "+r" (x0)
+		: "r" (x1), "r" (x2), "r" (x3), "r" (x4)
+		: "x8", "memory");
 
 	return x0;
 }
@@ -211,14 +231,30 @@ class vma_set_t {
 	// fill in a chunk of a line, possibly terminated, to the pool; parse ready lines
 	void fill(const char* const src, const size_t len, const bool eol)
 	{
+		const int flag_move = MREMAP_MAYMOVE;
+
 		if (last + offset + len >= capa) {
+			const size_t old_size = sizeof(*pool) * capa;
 			capa += capa;
-			pool = (char *) realloc(pool, capa * sizeof(*pool));
+			const size_t new_size = sizeof(*pool) * capa;
+			pool = (char *)sys::mremap(pool, old_size, new_size, flag_move, NULL);
+
+			if (pool == MAP_FAILED) {
+				fprintf(stderr, "error: cannot mremap char pool\n");
+				sys::exit(-1);
+			}
 		}
 
 		if (index == depth) {
+			const size_t old_size = sizeof(*vma) * depth;
 			depth += depth;
-			vma = (vma_t *) realloc(vma, depth * sizeof(*vma));
+			const size_t new_size = sizeof(*vma) * depth;
+			vma = (vma_t *)sys::mremap(vma, old_size, new_size, flag_move, NULL);
+
+			if (vma == MAP_FAILED) {
+				fprintf(stderr, "error: cannot mremap entries array\n");
+				sys::exit(-1);
+			}
 		}
 
 		char *const str = pool + last;
@@ -242,19 +278,30 @@ class vma_set_t {
 	}
 
 public:
-	vma_set_t() : last(0), index(0), offset(0), depth(16), capa(1024)
+	vma_set_t() : last(0), index(0), offset(0), depth(PAGE_SIZE / sizeof(*vma)), capa(PAGE_SIZE / sizeof(*pool))
 	{
-		pool = (char *) malloc(capa * sizeof(*pool));
-		vma = (vma_t *) malloc(depth * sizeof(*vma));
+		const int prot_rw = PROT_READ | PROT_WRITE;
+		const int flag_priv_anon = MAP_PRIVATE | MAP_ANONYMOUS | MAP_POPULATE;
+
+		pool = (char *)sys::mmap(nullptr, sizeof(*pool) * capa, prot_rw, flag_priv_anon, -1, 0);
+
+		if (pool == MAP_FAILED) {
+			fprintf(stderr, "error: cannot mmap char pool\n");
+			sys::exit(-1);
+		}
+
+		vma = (vma_t *)sys::mmap(nullptr, sizeof(*vma) * depth, prot_rw, flag_priv_anon, -1, 0);
+
+		if (vma == MAP_FAILED) {
+			fprintf(stderr, "error: cannot mmap entries array\n");
+			sys::exit(-1);
+		}
 	}
 
 	~vma_set_t()
 	{
-#if 0
-		free(vma);
-		free(pool);
-
-#endif
+		sys::munmap((void *)vma, sizeof(*vma) * depth);
+		sys::munmap((void *)pool, sizeof(*pool) * capa);
 	}
 
 	// current size of the container

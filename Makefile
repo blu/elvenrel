@@ -1,7 +1,7 @@
 SRC := reloc.c reloc_add_aarch64.c insn.h stringx.s strlen_linux.s vma.cpp vma.h
 TARGET := elvenrel
-CFLAGS += -std=c11 -Ofast -DNDEBUG
-CXXFLAGS += -std=c++11 -Ofast -fno-exceptions -fno-rtti -DNDEBUG
+CFLAGS += -std=c11 -Ofast -DNDEBUG -DPAGE_SIZE=$(shell getconf PAGE_SIZE)
+CXXFLAGS += -std=c++11 -Ofast -fno-exceptions -fno-rtti -DNDEBUG -DPAGE_SIZE=$(shell getconf PAGE_SIZE)
 LDFLAGS += -lelf
 ASFLAGS += --strip-local-absolute
 # Optional test objects built by target ALL
