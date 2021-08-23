@@ -448,7 +448,17 @@ void vma_process(struct char_ptr_arr_t *areas)
 	char buffer[] = "#### \033[38;5;14m ################-################ #### ######## ##:##";
 
 	for (size_t i = 0; i < vma.size(); ++i) {
-		buffer[13] = vma[i].cookie ? '3' : i & 1 ? '4' : '5';
+
+		// nuke filtered VMAs
+		if (vma[i].cookie) {
+			const uintptr_t start = vma[i].start;
+			const uintptr_t end = vma[i].end;
+			sys::munmap((void*)start, end - start);
+
+			buffer[13] = '3';
+		}
+		else
+			buffer[13] = i & 1 ? '4' : '5';
 
 		string_x16(buffer, i);
 		vma.str(i, buffer + 16, countof(buffer) - 16);
@@ -465,13 +475,4 @@ void vma_process(struct char_ptr_arr_t *areas)
 	}
 
 	alt::putc(FILENO_STDOUT, '\n');
-
-	// nuke all filtered VMAs
-	for (size_t i = 0, j = 0; i < vma.size(); ++i) {
-		if (vma[i].cookie) {
-			const uintptr_t start = vma[i].start;
-			const uintptr_t end = vma[i].end;
-			sys::munmap((void*)start, end - start);
-		}
-	}
 }
