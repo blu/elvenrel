@@ -462,7 +462,7 @@ void vma_process(struct char_ptr_arr_t *areas)
 
 		string_x16(buffer, i);
 		vma.str(i, buffer + 16, countof(buffer) - 16);
-		sys::write(FILENO_STDOUT, buffer, countof(buffer));
+		sys::write(FILENO_STDOUT, buffer, countof(buffer) - 1);
 
 		const char *const str = vma.src(i);
 		const size_t len = strlen_linux(str);
@@ -471,7 +471,7 @@ void vma_process(struct char_ptr_arr_t *areas)
 			sys::write(FILENO_STDOUT, str + vma_t::str_image_offset, len - vma_t::str_image_offset);
 
 		const char term[] = " \033[0m\n";
-		sys::write(FILENO_STDOUT, term, strlen_linux(term));
+		sys::write(FILENO_STDOUT, term, countof(term) - 1);
 	}
 
 	alt::putc(FILENO_STDOUT, '\n');
