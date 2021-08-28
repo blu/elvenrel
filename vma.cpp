@@ -1,5 +1,5 @@
 /*
- * Parsing of /proc/self/maps and optional disposing or sting-matched VMAs
+ * Parsing of /proc/self/maps and optional disposing or string-matched VMAs
  *
  * Copyright (C) 2021 Martin Krastev <blu.dark@gmail.com>
  */
@@ -35,19 +35,46 @@ extern "C" {
 #define FILENO_STDOUT 1
 #define FILENO_STDERR 2
 
-#define SYS_mremap    0x19 //  25
-#define SYS_write     0x40 //  64
-#define SYS_exit      0x5d //  93
-#define SYS_munmap    0xd7 // 215
-#define SYS_mmap      0xde // 222
+#define SYS_mremap    0x19
+#define SYS_write     0x40
+#define SYS_exit      0x5d
+#define SYS_munmap    0xd7
+#define SYS_mmap      0xde
 
 #define xxstr(s) #s
 #define xstr(s) xxstr(s)
 
-template < typename T, size_t N >
-int8_t (& noneval_countof(const T (&)[N]))[N];
+template < typename T >
+using ref = T&;
 
-#define countof(x) sizeof(noneval_countof(x))
+template < size_t N >
+class char_array_t
+{
+	char arr[N];
+
+public:
+	char_array_t(const char (& arg)[N]) { for (size_t i = 0; i < N; ++i) arr[i] = arg[i]; }
+	operator ref<       char[N] >()       { return arr; }
+	operator ref< const char[N] >() const { return arr; }
+};
+
+template < size_t N >
+char_array_t< N - 1 > strip_str(const char (& arg)[N])
+{
+	return char_array_t< N - 1 >(reinterpret_cast< const char (&)[N - 1] >(arg));
+}
+
+template < typename T, size_t N >
+constexpr size_t countof(const T (&)[N])
+{
+	return N;
+}
+
+template < size_t N >
+constexpr size_t countof(const char_array_t< N >&)
+{
+	return N;
+}
 
 namespace sys {
 
@@ -207,7 +234,7 @@ struct vma_t {
 
 	ssize_t print() const
 	{
-		char buffer[] = "################-################ #### ######## ##:##";
+		auto buffer = strip_str("################-################ #### ######## ##:##");
 		const size_t len = str(buffer, countof(buffer));
 
 		return sys::write(FILENO_STDOUT, buffer, len);
@@ -445,7 +472,7 @@ void vma_process(struct char_ptr_arr_t *areas)
 
 	alt::putc(FILENO_STDOUT, '\n');
 
-	char buffer[] = "#### \033[38;5;14m ################-################ #### ######## ##:##";
+	auto buffer = strip_str("#### \033[38;5;14m ################-################ #### ######## ##:##");
 
 	for (size_t i = 0; i < vma.size(); ++i) {
 
@@ -462,7 +489,7 @@ void vma_process(struct char_ptr_arr_t *areas)
 
 		string_x16(buffer, i);
 		vma.str(i, buffer + 16, countof(buffer) - 16);
-		sys::write(FILENO_STDOUT, buffer, countof(buffer) - 1);
+		sys::write(FILENO_STDOUT, buffer, countof(buffer));
 
 		const char *const str = vma.src(i);
 		const size_t len = strlen_linux(str);
@@ -470,8 +497,8 @@ void vma_process(struct char_ptr_arr_t *areas)
 		if (len > vma_t::str_image_offset)
 			sys::write(FILENO_STDOUT, str + vma_t::str_image_offset, len - vma_t::str_image_offset);
 
-		const char term[] = " \033[0m\n";
-		sys::write(FILENO_STDOUT, term, countof(term) - 1);
+		const auto term = strip_str(" \033[0m\n");
+		sys::write(FILENO_STDOUT, term, countof(term));
 	}
 
 	alt::putc(FILENO_STDOUT, '\n');
