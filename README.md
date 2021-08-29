@@ -26,9 +26,9 @@ Files used, with or without modifications, from external repositories:
 ```sh
 $ ./elvenrel test_cross1.o test_cross2.o # order of RELs matters for symbol resolution; undefined symbols in later RELs are sought in earlier RELs
 
-$ ./elvenrel test_rodata.o --filter /lib/aarch64-linux-gnu # before executing the specified REL dispose of VMAs from file mappings containing /lib/aarch64-linux-gnu in the path
+$ ./elvenrel test_rodata.o --filter /lib/aarch64-linux-gnu # before executing the REL dispose of VMAs from file mappings containing /lib/aarch64-linux-gnu in the path
 
-$ ./elvenrel test_data.o --filter [heap] # before executing the specified REL dispose of the VMA designated as `[heap]`, i.e. the process heap
+$ ./elvenrel test_data.o --filter [heap] # before executing the REL dispose of the VMA designated as `[heap]`, i.e. the process heap
 ```
 
 ## Screenshots

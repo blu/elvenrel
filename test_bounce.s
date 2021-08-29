@@ -26,7 +26,6 @@ _start:
 	mov	x7, FRAMES
 	mov	w10, 1 // blip step_x
 	mov	w11, 1 // blip step_y
-
 frame:
 	// reset cursor; inherited x8
 	mov	x2, fb_cursor_len
@@ -84,5 +83,5 @@ fb_cursor_len = . - fb_cursor_cmd
 	.section .data
 	.align 6
 fb:
-	.fill	FB_DIM_Y * FB_DIM_X, 1, ' '
+	.fill FB_DIM_Y * FB_DIM_X, 1, ' '
 fb_len = . - fb
