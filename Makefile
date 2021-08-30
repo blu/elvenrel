@@ -5,7 +5,7 @@ CXXFLAGS += -std=c++11 -Ofast -fno-exceptions -fno-rtti -DNDEBUG -DPAGE_SIZE=$(s
 LDFLAGS += -lelf
 ASFLAGS += --strip-local-absolute
 # Optional test objects built by target ALL
-REL := test_rodata.o test_data.o test_cross1.o test_cross2.o test_bounce.o
+REL := test_rodata.o test_data.o test_cross1.o test_cross2.o test_bounce.o test_bounce_neon.o
 
 OBJ := $(addsuffix .o, $(basename $(filter %.s %.c %.cpp, $(SRC))))
 
@@ -20,6 +20,9 @@ vma.o: vma.cpp vma.h
 
 test_bounce.o: test_bounce.s
 	$(AS) $(ASFLAGS) --defsym FB_DIM_X=$(shell tput cols) --defsym FB_DIM_Y=$(shell tput lines) --defsym FRAMES=1024 -o $@ $^
+
+test_bounce_neon.o: test_bounce_neon.s
+	$(AS) $(ASFLAGS) --defsym FB_DIM_X=$(shell tput cols) --defsym FB_DIM_Y=$(shell tput lines) --defsym FRAMES=2048 -o $@ $^
 
 all: $(TARGET) $(REL)
 
