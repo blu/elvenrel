@@ -95,8 +95,8 @@ frame:
 	svc	0
 
 	mov	x8, SYS_write
-	sub	x9, x9, 1
-	cbnz	x9, frame
+	subs	x9, x9, 1
+	bne	frame
 
 	mov	x8, SYS_exit
 	mov	x0, xzr
