@@ -2,6 +2,7 @@
 
 	.equ SYS_write, 64
 	.equ SYS_exit, 93
+	.equ SYS_nanosleep, 101
 	.equ STDOUT_FILENO, 1
 
 .if 0
@@ -15,7 +16,7 @@
 	.text
 _start:
 	// clear screen
-	mov	x8, SYS_write // keep x8 at that
+	mov	x8, SYS_write
 	mov	x2, fb_clear_len
 	adr	x1, fb_clear_cmd
 	mov	x0, STDOUT_FILENO
@@ -27,7 +28,7 @@ _start:
 	mov	w10, 1 // blip step_x
 	mov	w11, 1 // blip step_y
 frame:
-	// reset cursor; inherited x8
+	// reset cursor; x8 = SYS_write
 	mov	x2, fb_cursor_len
 	adr	x1, fb_cursor_cmd
 	mov	x0, STDOUT_FILENO
@@ -56,7 +57,7 @@ frame:
 	ccmp	w6, 0, 4, NE
 	cneg	w11, w11, EQ
 
-	// output fb; inherited x8
+	// output fb; x8 = SYS_write
 	mov	x0, STDOUT_FILENO
 	svc	0
 
@@ -64,6 +65,12 @@ frame:
 	mov	w3, 0x2020
 	strh	w3, [x1, x4]
 
+	mov	x8, SYS_nanosleep
+	mov	x1, xzr
+	adr	x0, timespec
+	svc	0
+
+	mov	x8, SYS_write
 	sub	x7, x7, 1
 	cbnz	x7, frame
 
@@ -79,6 +86,9 @@ fb_clear_len = . - fb_clear_cmd
 fb_cursor_cmd:
 	.ascii "\033[1;1H"
 fb_cursor_len = . - fb_cursor_cmd
+
+timespec:
+	.dword 0, 15500000
 
 	.section .data
 	.align 6
