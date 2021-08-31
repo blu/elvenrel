@@ -22,7 +22,7 @@ _start:
 	mov	x0, STDOUT_FILENO
 	svc	0
 
-	// Four Q-form regs hold SoA { pos_x, pos_y, step_x, step_y }
+	// four Q-form regs hold SoA { pos_x, pos_y, step_x, step_y }
 	ldr	q0, =0x00000000000000100000002000000030 // blip{0..3} pos_x
 	ldr	q1, =0x00000000000000100000000000000010 // blip{0..3} pos_y
 	ldr	q2, =0x00000001000000010000000100000001 // blip{0..3} step_x
