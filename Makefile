@@ -25,7 +25,7 @@ test_bounce_neon.o: test_bounce_neon.s
 	$(AS) $(ASFLAGS) --defsym FB_DIM_X=$(shell tput cols) --defsym FB_DIM_Y=$(shell tput lines) --defsym FRAMES=2048 -o $@ $^
 
 test_bounce_neon_aosoa.o: test_bounce_neon_aosoa.s
-	$(AS) $(ASFLAGS) --defsym FB_DIM_X=$(shell tput cols) --defsym FB_DIM_Y=$(shell tput lines) --defsym FRAMES=512 -o $@ $^
+	$(AS) $(ASFLAGS) --defsym FB_DIM_X=$(shell tput cols) --defsym FB_DIM_Y=$(shell tput lines) --defsym FRAMES=1024 -o $@ $^
 
 all: $(TARGET) $(REL)
 
