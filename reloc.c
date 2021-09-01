@@ -474,7 +474,8 @@ static int
 	relocate_elf_load_cu(
 		Elf *elf,
 		void **start,
-		ptrdiff_t diff_exec)
+		ptrdiff_t diff_exec,
+		int flag_quiet)
 {
 	ElfDetails details = NULL;
 	Elf64_Sym *symtab;
@@ -491,7 +492,9 @@ static int
 	symtab++;
 	n_symbols = (details->ed_shdrs[details->ed_symtab_idx]->sh_size) / sizeof(*symtab);
 
-	printf("    symtab_value____ symtab_type__ symtab_bind___ symtab_section___ symtab_name__\n");
+	if (!flag_quiet) {
+		printf("    symtab_value____ symtab_type__ symtab_bind___ symtab_section___ symtab_name__\n");
+	}
 
 	for (i = 1; i < n_symbols; i++, symtab++) {
 		const char *name = "_____________";
@@ -515,13 +518,15 @@ static int
 			}
 		}
 
-		printf("%2ld: %016lx %-13s %-14s %-17s %s\n",
-			i,
-			symtab->st_value,
-			str_from_st_type(ELF64_ST_TYPE(symtab->st_info)),
-			str_from_st_bind(ELF64_ST_BIND(symtab->st_info)),
-			str_from_st_shndx(symtab->st_shndx, elf),
-			name);
+		if (!flag_quiet) {
+			printf("%2ld: %016lx %-13s %-14s %-17s %s\n",
+				i,
+				symtab->st_value,
+				str_from_st_type(ELF64_ST_TYPE(symtab->st_info)),
+				str_from_st_bind(ELF64_ST_BIND(symtab->st_info)),
+				str_from_st_shndx(symtab->st_shndx, elf),
+				name);
+		}
 	}
 
 	/* Apply any SHT_REL relocations */
@@ -552,6 +557,7 @@ static void print_usage(char **argv)
 {
 	printf("usage: %s <elf_rel_file> [<elf_rel_file>] ..\n"
 	       "\t--filter <string> : filter file mappings containing the specified string\n"
+	       "\t--quiet           : suppress all reports\n"
 	       "\t--help            : this message\n", argv[0]);
 }
 
@@ -562,6 +568,7 @@ int main(int argc, char **argv)
 	struct char_ptr_arr_t objs = { .count = 0, .arr = NULL };
 	Elf *prev_elf = NULL;
 	void *start = NULL;
+	int flag_quiet = 0;
 	size_t i;
 
 	if (argc == 1) {
@@ -573,6 +580,11 @@ int main(int argc, char **argv)
 		if (!strcmp(argv[i], "--help")) {
 			print_usage(argv);
 			return 0;
+		}
+
+		if (!strcmp(argv[i], "--quiet")) {
+			flag_quiet = 1;
+			continue;
 		}
 
 		if (!strcmp(argv[i], "--filter")) {
@@ -651,7 +663,7 @@ int main(int argc, char **argv)
 		ehdr64->e_entry = (Elf64_Addr)prev_elf;
 		prev_elf = elf;
 
-		if (relocate_elf_load_cu(elf, &start, q - p)) {
+		if (relocate_elf_load_cu(elf, &start, q - p, flag_quiet)) {
 			fprintf(stderr, "error: cannot relocate_elf_load_cu\n");
 			return -1;
 		}
@@ -663,7 +675,7 @@ int main(int argc, char **argv)
 	}
 
 	if (areas.count && areas.arr != NULL)
-		vma_process(&areas);
+		vma_process(&areas, flag_quiet);
 
 	if (start != NULL)
 		((void (*)(void))start)();

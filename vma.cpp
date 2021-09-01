@@ -459,7 +459,7 @@ int vma_set_t::read_from_proc()
 	return 0;
 }
 
-void vma_process(struct char_ptr_arr_t *areas)
+void vma_process(struct char_ptr_arr_t *areas, int flag_quiet)
 {
 	assert(areas != nullptr);
 
@@ -470,7 +470,8 @@ void vma_process(struct char_ptr_arr_t *areas)
 
 	// libc-free zone from here
 
-	alt::putc(FILENO_STDOUT, '\n');
+	if (!flag_quiet)
+		alt::putc(FILENO_STDOUT, '\n');
 
 	auto buffer = strip_str("#### \033[38;5;14m ################-################ #### ######## ##:##");
 
@@ -487,19 +488,22 @@ void vma_process(struct char_ptr_arr_t *areas)
 		else
 			buffer[13] = i & 1 ? '4' : '5';
 
-		string_x16(buffer, i);
-		vma.str(i, buffer + 16, countof(buffer) - 16);
-		sys::write(FILENO_STDOUT, buffer, countof(buffer));
+		if (!flag_quiet) {
+			string_x16(buffer, i);
+			vma.str(i, buffer + 16, countof(buffer) - 16);
+			sys::write(FILENO_STDOUT, buffer, countof(buffer));
 
-		const char *const str = vma.src(i);
-		const size_t len = strlen_linux(str);
+			const char *const str = vma.src(i);
+			const size_t len = strlen_linux(str);
 
-		if (len > vma_t::str_image_offset)
-			sys::write(FILENO_STDOUT, str + vma_t::str_image_offset, len - vma_t::str_image_offset);
+			if (len > vma_t::str_image_offset)
+				sys::write(FILENO_STDOUT, str + vma_t::str_image_offset, len - vma_t::str_image_offset);
 
-		const auto term = strip_str(" \033[0m\n");
-		sys::write(FILENO_STDOUT, term, countof(term));
+			const auto term = strip_str(" \033[0m\n");
+			sys::write(FILENO_STDOUT, term, countof(term));
+		}
 	}
 
-	alt::putc(FILENO_STDOUT, '\n');
+	if (!flag_quiet)
+		alt::putc(FILENO_STDOUT, '\n');
 }

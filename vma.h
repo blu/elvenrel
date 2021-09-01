@@ -10,7 +10,7 @@ struct char_ptr_arr_t {
 	char **arr;
 };
 
-void vma_process(struct char_ptr_arr_t *areas);
+void vma_process(struct char_ptr_arr_t *areas, int flag_quiet);
 
 #ifdef __cplusplus
 } /* extern "C" */

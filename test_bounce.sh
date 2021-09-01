@@ -2,8 +2,8 @@
 
 make all
 
-# Hide term cursor before loading REL; nuke all VMAs originating from common libraries,
-# along with the process heap VMA, before passing control to _start; restore term cursor
+# Hide term cursor before loading REL; nuke all VMAs from common libraries and
+# the process heap VMA, before passing control to _start; restore term cursor
 # upon termination
 
 tput civis
