@@ -35,10 +35,10 @@ extern "C" {
 #define FILENO_STDOUT 1
 #define FILENO_STDERR 2
 
-#define SYS_mremap    0x19
 #define SYS_write     0x40
 #define SYS_exit      0x5d
 #define SYS_munmap    0xd7
+#define SYS_mremap    0xd8
 #define SYS_mmap      0xde
 
 #define xxstr(s) #s
