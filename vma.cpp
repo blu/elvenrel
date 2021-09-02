@@ -476,28 +476,26 @@ void vma_process(struct char_ptr_arr_t *areas, int flag_quiet)
 	auto buffer = strip_str("#### \033[38;5;14m ################-################ #### ######## ##:##");
 
 	for (size_t i = 0; i < vma.size(); ++i) {
+		const bool filtered = vma[i].cookie;
 
 		// nuke filtered VMAs
-		if (vma[i].cookie) {
+		if (filtered) {
 			const uintptr_t start = vma[i].start;
 			const uintptr_t end = vma[i].end;
 			sys::munmap((void*)start, end - start);
-
-			buffer[13] = '3';
 		}
-		else
-			buffer[13] = i & 1 ? '4' : '5';
 
 		if (!flag_quiet) {
 			string_x16(buffer, i);
+			buffer[13] = filtered ? '3' : i & 1 ? '4' : '5';
 			vma.str(i, buffer + 16, countof(buffer) - 16);
 			sys::write(FILENO_STDOUT, buffer, countof(buffer));
 
-			const char *const str = vma.src(i);
-			const size_t len = strlen_linux(str);
+			const char *const src = vma.src(i);
+			const size_t len = strlen_linux(src);
 
 			if (len > vma_t::str_image_offset)
-				sys::write(FILENO_STDOUT, str + vma_t::str_image_offset, len - vma_t::str_image_offset);
+				sys::write(FILENO_STDOUT, src + vma_t::str_image_offset, len - vma_t::str_image_offset);
 
 			const auto term = strip_str(" \033[0m\n");
 			sys::write(FILENO_STDOUT, term, countof(term));
