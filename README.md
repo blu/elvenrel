@@ -4,10 +4,18 @@ Elven Relativism -- relocation and execution of aarch64 ELF relocatable objects 
 
 Program loads a multitude of ELF REL files, resolves all relocations (currently only SHT_RELA) and if symbol `_start` in some section `.text` is found, passes control to the former.
 
+## Details
+
+* RELs loaded in the order specified on the command line; all relocations in a given REL performed at its loading time.
+* Missing-symbol resolution via chronological closer-to-further search among the preceding RELs; first-match resolution.
+* Support for RO sections `.rodata` and `.text`; every other type of section is RW; `.bss` unsupported -- section is not allocated and cannot participate in relocations.
+* Address-space sanitation -- disposing of pre-existing VMAs (*VMA filtering*) via string matching to VMA backing path.
+
 ## ToDo
 
-* Resolution of all (common) relocation types
-* Explicit (CLI) control over the mapping addresses of each REL
+* Support for `.bss` sections.
+* Relocation types other than SHT_RELA; as needed.
+* Explicit (CLI) control over the mapping addresses of each REL; as needed.
 
 ## Acknowledgements
 
