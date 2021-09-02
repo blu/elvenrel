@@ -1,6 +1,6 @@
 ## elvenrel
 
-Elven Relativism -- relocation and execution of ELF relocatable objects (REL)
+Elven Relativism -- relocation and execution of aarch64 ELF relocatable objects (REL)
 
 Program loads a multitude of ELF REL files, resolves all relocations (currently only SHT_RELA) and if symbol `_start` in some section `.text` is found, passes control to the former.
 
