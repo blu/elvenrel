@@ -38,12 +38,10 @@ typedef struct ElfDetails_s {
 	uint64              ed_n_elf_scns;   /* Number of ELF sections         */
 
 	Elf64_Section       ed_text_idx;     /* .text section index            */
-	Elf64_Section       ed_rodata_idx;   /* .rodata section index          */
 	Elf64_Section       ed_rel_text_idx; /* .rel.text section index        */
 	Elf64_Section       ed_rela_text_idx;/* .rela.text section index       */
 	Elf64_Section       ed_symtab_idx;   /* .symtab section index          */
 	Elf64_Section       ed_strtab_idx;   /* .strtab section index          */
-	Elf64_Section       ed_shstrtab_idx; /* .shstrtab section index        */
 } *ElfDetails;
 
 const char *str_from_st_type(uint8_t x)
@@ -265,7 +263,16 @@ static int
 	Elf_Data *data;
 	const char *scn_name;
 	Elf64_Shdr **section_list;
-	uint64 scn_idx, n_elf_scns, shstrtab_idx;
+	size_t scn_idx, n_elf_scns;
+	Elf64_Section shstrtab_idx = 0;
+	Elf64_Section symtab_idx = 0;
+	Elf64_Section strtab_idx = 0;
+	Elf64_Section rodata_idx = 0;
+	Elf64_Section data_idx = 0;
+	Elf64_Section bss_idx = 0;
+	Elf64_Section text_idx = 0;
+	Elf64_Section rel_text_idx = 0;
+	Elf64_Section rela_text_idx = 0;
 	int rc;
 
 	/* Determine if 64-bit or 32-bit ELF file */
@@ -308,7 +315,6 @@ static int
 	/* Initialize the new object */
 	details->ed_elf          = elf;
 	details->ed_n_elf_scns   = n_elf_scns;
-	details->ed_shstrtab_idx = shstrtab_idx;
 
 	/* Allocate list object (array of Elf64_Shdr*) for the ELF sections */
 	section_list = (Elf64_Shdr**) calloc(sizeof(*section_list), n_elf_scns);
@@ -343,72 +349,86 @@ static int
 				return -1;
 			}
 			/* Validate there is only one .text section */
-			if (details->ed_text_idx != 0) {
+			if (text_idx != 0) {
 				return -1;
 			}
-			details->ed_text_idx = scn_idx;
+			details->ed_text_idx = text_idx = scn_idx;
 		}
-
-		if (strcmp(scn_name,".rodata") == 0) {
+		else if (strcmp(scn_name,".rodata") == 0) {
 			if (shdr64->sh_type != SHT_PROGBITS) {
 				return -1;
 			}
 			/* Validate there is only one .rodata section */
-			if (details->ed_rodata_idx != 0) {
+			if (rodata_idx != 0) {
 				return -1;
 			}
-			details->ed_rodata_idx = scn_idx;
+			rodata_idx = scn_idx;
 		}
-
-		if (strcmp(scn_name,".rel.text") == 0) {
+		else if (strcmp(scn_name,".data") == 0) {
+			if (shdr64->sh_type != SHT_PROGBITS) {
+				return -1;
+			}
+			/* Validate there is only one .data section */
+			if (data_idx != 0) {
+				return -1;
+			}
+			data_idx = scn_idx;
+		}
+		else if (strcmp(scn_name, ".bss") == 0) {
+			if (shdr64->sh_type != SHT_NOBITS) {
+				return -1;
+			}
+			/* Validate there is only one .bss section */
+			if (bss_idx != 0) {
+				return -1;
+			}
+			bss_idx = scn_idx;
+		}
+		else if (strcmp(scn_name,".rel.text") == 0) {
 			if (shdr64->sh_type != SHT_REL) {
 				return -1;
 			}
 			/* Validate there is only one .rel.text section */
-			if (details->ed_rel_text_idx != 0) {
+			if (rel_text_idx != 0) {
 				return -1;
 			}
-			details->ed_rel_text_idx = scn_idx;
+			details->ed_rel_text_idx = rel_text_idx = scn_idx;
 		}
-
-		if (strcmp(scn_name,".rela.text") == 0) {
+		else if (strcmp(scn_name,".rela.text") == 0) {
 			if (shdr64->sh_type != SHT_RELA) {
 				return -1;
 			}
-			/* Validate there is only one .rel.text section */
-			if (details->ed_rela_text_idx != 0) {
+			/* Validate there is only one .rela.text section */
+			if (rela_text_idx != 0) {
 				return -1;
 			}
-			details->ed_rela_text_idx = scn_idx;
+			details->ed_rela_text_idx = rela_text_idx = scn_idx;
 		}
 		else if (strcmp(scn_name,".symtab") == 0) {
 			if (shdr64->sh_type != SHT_SYMTAB) {
 				return -1;
 			}
 			/* Validate there is only one .symtab section */
-			if (details->ed_symtab_idx != 0) {
+			if (symtab_idx != 0) {
 				return -1;
 			}
-			details->ed_symtab_idx = scn_idx;
+			details->ed_symtab_idx = symtab_idx = scn_idx;
 		}
 		else if (strcmp(scn_name,".strtab") == 0) {
 			if (shdr64->sh_type != SHT_STRTAB) {
 				return -1;
 			}
 			/* Validate there is only one .strtab section */
-			if (details->ed_strtab_idx != 0) {
+			if (strtab_idx != 0) {
 				return -1;
 			}
-			details->ed_strtab_idx = scn_idx;
+			details->ed_strtab_idx = strtab_idx = scn_idx;
 		}
 		else if (strcmp(scn_name,".shstrtab") == 0) {
 			if (shdr64->sh_type != SHT_STRTAB) {
 				return -1;
 			}
 			/* Validate there is only one .shstrtab section */
-			if (details->ed_shstrtab_idx != scn_idx) {
-				return -1;
-			}
 			if (shstrtab_idx != scn_idx) {
 				return -1;
 			}
@@ -419,23 +439,38 @@ static int
 			if (shdr64->sh_size != data->d_size) {
 				return -1;
 			}
-			/* Guard against empty .text sections which have a valid vaddr */
+			/* Ignore empty sections */
 			if (data->d_size != 0) {
-				shdr64->sh_addr = (Elf64_Addr)data->d_buf;
+				/* Section .bss does not have file backing */
+				if (scn_idx == bss_idx) {
+					const int prot_rw = PROT_READ | PROT_WRITE;
+					const int flag_priv_anon = MAP_PRIVATE | MAP_ANONYMOUS | MAP_POPULATE;
 
-				if (scn_idx == details->ed_text_idx ||
-					scn_idx == details->ed_rodata_idx) {
-					shdr64->sh_addr += diff_exec;
+					void *p = mmap(NULL, data->d_size, prot_rw, flag_priv_anon, -1, 0);
+
+					if (p == MAP_FAILED) {
+						fprintf(stderr, "error: cannot mmap bss\n");
+						return -1;
+					}
+
+					shdr64->sh_addr = (Elf64_Addr)p;
+				} else {
+					shdr64->sh_addr = (Elf64_Addr)data->d_buf;
+
+					if (scn_idx == text_idx ||
+					    scn_idx == rodata_idx) {
+						shdr64->sh_addr += diff_exec;
+					}
 				}
 			}
 		}
 	}
 
 	/* Ensure the file has all required sections */
-	if ((details->ed_text_idx     == 0) ||
-	    (details->ed_symtab_idx   == 0) ||
-	    (details->ed_strtab_idx   == 0) ||
-	    (details->ed_shstrtab_idx == 0)) {
+	if (text_idx     == 0 ||
+	    symtab_idx   == 0 ||
+	    strtab_idx   == 0 ||
+	    shstrtab_idx == 0) {
 		return -1;
 	}
 
