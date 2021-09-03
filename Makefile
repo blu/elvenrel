@@ -14,7 +14,9 @@ REL := test_rodata.o \
 	test_bounce_neon.o \
 	test_bounce_neon_aosoa.o \
 	test_bounce_data_aosoa_alt_0.o \
-	test_bounce_data_aosoa_alt_1.o
+	test_bounce_data_aosoa_alt_1.o \
+	test_bounce_data_aosoa_alt_2.o \
+	test_bounce_data_aosoa_alt_3.o
 
 OBJ := $(addsuffix .o, $(basename $(filter %.s %.c %.cpp, $(SRC))))
 
