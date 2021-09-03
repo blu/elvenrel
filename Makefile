@@ -8,8 +8,8 @@ ASFLAGS += --strip-local-absolute
 REL := test_rodata.o \
 	test_data.o \
 	test_bss.o \
-	test_cross1.o \
-	test_cross2.o \
+	test_cross_0.o \
+	test_cross_1.o \
 	test_bounce.o \
 	test_bounce_neon.o \
 	test_bounce_neon_aosoa.o \

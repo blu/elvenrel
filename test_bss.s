@@ -13,12 +13,11 @@ _start:
 	svc	0
 
 	adrp	x1, code
-	ldr	x2, [x1, :lo12:code]
-	add	x2, x2, 1
-	str	x2, [x1, :lo12:code]
+	ldr	x0, [x1, :lo12:code]
+	add	x0, x0, 1
+	str	x0, [x1, :lo12:code]
 
 	mov	x8, SYS_exit
-	ldr	x0, [x1, :lo12:code]
 	svc	0
 
 	.section .bss
