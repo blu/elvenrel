@@ -30,7 +30,7 @@ _start:
 	dup	v6.4s, w6
 
 	mov	x9, FRAMES
-frame:
+.Lframe:
 	// reset cursor; x8 = SYS_write
 	mov	x2, fb_cursor_len
 	adr	x1, fb_cursor_cmd
@@ -45,7 +45,7 @@ frame:
 	adr	x10, blip
 	adr	x11, blip_end
 	mov	x12, x11
-pack_plot:
+.Lpack_plot:
 	// four Q-form regs hold SoA { pos_x, pos_y, step_x, step_y }
 	ldp	q0, q1, [x10]
 	ldp	q2, q3, [x10, 32]
@@ -86,7 +86,7 @@ pack_plot:
 	stp	q2, q3, [x10], 32
 
 	cmp	x10, x11
-	bne	pack_plot
+	bne	.Lpack_plot
 
 	// output fb; x8 = SYS_write
 	mov	x0, STDOUT_FILENO
@@ -95,7 +95,7 @@ pack_plot:
 	// erase blips from fb
 	adr	x10, blip_end
 	adr	x11, erase_end
-pack_erase:
+.Lpack_erase:
 	ldp	w4, w5, [x10], 8
 	ldp	w6, w7, [x10], 8
 
@@ -106,7 +106,7 @@ pack_erase:
 	strh	w3, [x1, x7]
 
 	cmp	x10, x11
-	bne	pack_erase
+	bne	.Lpack_erase
 
 	mov	x8, SYS_nanosleep
 	mov	x1, xzr
@@ -115,7 +115,7 @@ pack_erase:
 
 	mov	x8, SYS_write
 	subs	x9, x9, 1
-	bne	frame
+	bne	.Lframe
 
 	mov	x8, SYS_exit
 	mov	x0, xzr

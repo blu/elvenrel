@@ -27,7 +27,7 @@ _start:
 	mov	x7, FRAMES
 	mov	w10, 1 // blip step_x
 	mov	w11, 1 // blip step_y
-frame:
+.Lframe:
 	// reset cursor; x8 = SYS_write
 	mov	x2, fb_cursor_len
 	adr	x1, fb_cursor_cmd
@@ -72,7 +72,7 @@ frame:
 
 	mov	x8, SYS_write
 	subs	x7, x7, 1
-	bne	frame
+	bne	.Lframe
 
 	mov	x8, SYS_exit
 	mov	x0, xzr

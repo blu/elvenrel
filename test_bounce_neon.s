@@ -36,7 +36,7 @@ _start:
 	dup	v6.4s, w6
 
 	mov	x9, FRAMES
-frame:
+.Lframe:
 	// reset cursor; x8 = SYS_write
 	mov	x2, fb_cursor_len
 	adr	x1, fb_cursor_cmd
@@ -96,7 +96,7 @@ frame:
 
 	mov	x8, SYS_write
 	subs	x9, x9, 1
-	bne	frame
+	bne	.Lframe
 
 	mov	x8, SYS_exit
 	mov	x0, xzr
