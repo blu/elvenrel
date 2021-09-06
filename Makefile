@@ -13,6 +13,7 @@ REL := test_rodata.o \
 	test_bounce.o \
 	test_bounce_neon.o \
 	test_bounce_neon_aosoa.o \
+	test_bounce_neon_aosoa_bg.o \
 	test_bounce_data_aosoa_alt_0.o \
 	test_bounce_data_aosoa_alt_1.o \
 	test_bounce_data_aosoa_alt_2.o \
@@ -37,6 +38,9 @@ test_bounce_neon.o: test_bounce_neon.s
 
 test_bounce_neon_aosoa.o: test_bounce_neon_aosoa.s
 	$(AS) $(ASFLAGS) --defsym FB_DIM_X=$(shell tput cols) --defsym FB_DIM_Y=$(shell tput lines) --defsym FRAMES=1024 -o $@ $^
+
+test_bounce_neon_aosoa_bg.o: test_bounce_neon_aosoa_bg.s
+	$(AS) $(ASFLAGS) --defsym FB_DIM_X=$(shell tput cols) --defsym FB_DIM_Y=$(shell tput lines) --defsym FRAMES=2048 -o $@ $^
 
 all: $(TARGET) $(REL)
 

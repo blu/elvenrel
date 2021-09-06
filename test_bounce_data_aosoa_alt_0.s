@@ -78,5 +78,5 @@ blip: // AoSoA
 	.word 0x00000001, 0x00000001, 0x00000001, 0x00000001
 	.word 0x00000001, 0x00000001, 0x00000001, 0x00000001
 blip_end:
-	.fill (blip_end - blip) / 16, 4, 0
+	.fill (blip_end - blip) / 16, 4
 erase_end:
