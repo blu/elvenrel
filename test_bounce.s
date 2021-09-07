@@ -13,6 +13,12 @@
 	// symbols supplied by CLI
 .endif
 
+// load 'far' address as a +/-4GB offset from PC
+.macro adrf Xn, addr:req
+	adrp	\Xn, \addr
+	add	\Xn, \Xn, :lo12:\addr
+.endm
+
 	.text
 _start:
 	// clear screen
@@ -35,8 +41,8 @@ _start:
 	svc	0
 
 	// access to fb: addr & len as per SYS_write
-	mov	x2, fb_len
-	adr	x1, fb
+	ldr	w2, =fb_len
+	adrf	x1, fb
 
 	// plot blip in fb
 	mov	w3, 0x5d5b
@@ -78,7 +84,6 @@ _start:
 	mov	x0, xzr
 	svc	0
 
-	.section .rodata
 fb_clear_cmd:
 	.ascii "\033[2J"
 fb_clear_len = . - fb_clear_cmd

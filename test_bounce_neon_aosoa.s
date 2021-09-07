@@ -13,6 +13,12 @@
 	// symbols supplied by CLI
 .endif
 
+// load 'far' address as a +/-4GB offset from PC
+.macro adrf Xn, addr:req
+	adrp	\Xn, \addr
+	add	\Xn, \Xn, :lo12:\addr
+.endm
+
 	.text
 _start:
 	// clear screen
@@ -38,12 +44,12 @@ _start:
 	svc	0
 
 	// access to fb: addr & len as per SYS_write
-	mov	x2, fb_len
-	adr	x1, fb
+	ldr	w2, =fb_len
+	adrf	x1, fb
 
 	// plot blips in fb
-	adr	x10, blip
-	adr	x11, blip_end
+	adrf	x10, blip
+	adrf	x11, blip_end
 	mov	x12, x11
 .Lpack_plot:
 	// four Q-form regs hold SoA { pos_x, pos_y, step_x, step_y }
@@ -93,8 +99,8 @@ _start:
 	svc	0
 
 	// erase blips from fb
-	adr	x10, blip_end
-	adr	x11, erase_end
+	adrf	x10, blip_end
+	adrf	x11, erase_end
 .Lpack_erase:
 	ldp	w4, w5, [x10], 8
 	ldp	w6, w7, [x10], 8
@@ -121,7 +127,6 @@ _start:
 	mov	x0, xzr
 	svc	0
 
-	.section .rodata
 fb_clear_cmd:
 	.ascii "\033[2J"
 fb_clear_len = . - fb_clear_cmd

@@ -25,6 +25,12 @@
 	.equ GRID_STEP_Y_2, 0
 	.equ GRID_STEP_Y_3, 1
 
+// load 'far' address as a +/-4GB offset from PC
+.macro adrf Xn, addr:req
+	adrp	\Xn, \addr
+	add	\Xn, \Xn, :lo12:\addr
+.endm
+
 	.text
 _start:
 	// clear screen
@@ -51,10 +57,8 @@ _start:
 	adr	x12, grid_step_xxx0
 	adr	x13, grid_step_1234
 
-	adrp	x7, grid
-	add	x7, x7, :lo12:grid
-	adrp	x8, grid_end
-	add	x8, x8, :lo12:grid_end
+	adrf	x7, grid
+	adrf	x8, grid_end
 	mov	w9, wzr
 .Lgen_grid:
 	// how many x-coords exceed end-of-line - 2?
@@ -139,14 +143,12 @@ _start:
 	svc	0
 
 	// access to fb: addr & len as per SYS_write
-	mov	x2, fb_len
-	adr	x1, fb
+	ldr	w2, =fb_len
+	adrf	x1, fb
 
 	// plot grid in fb
-	adrp	x10, grid
-	add	x10, x10, :lo12:grid
-	adrp	x11, grid_end
-	add	x11, x11, :lo12:grid_end
+	adrf	x10, grid
+	adrf	x11, grid_end
 	mov	x12, x11
 .Lgrid_plot:
 	// four Q-form regs hold SoA { pos_x, pos_y, step_x, step_y }
@@ -192,8 +194,8 @@ _start:
 	bne	.Lgrid_plot
 
 	// plot blips in fb
-	adr	x10, blip
-	adr	x11, blip_end
+	adrf	x10, blip
+	adrf	x11, blip_end
 	mov	x12, x11
 .Lpack_plot:
 	// four Q-form regs hold SoA { pos_x, pos_y, step_x, step_y }
@@ -243,10 +245,8 @@ _start:
 	svc	0
 
 	// erase grid from fb
-	adrp	x10, grid_end
-	add	x10, x10, :lo12:grid_end
-	adrp	x11, grid_erase_end
-	add	x11, x11, :lo12:grid_erase_end
+	adrf	x10, grid_end
+	adrf	x11, grid_erase_end
 .Lgrid_erase:
 	ldp	w4, w5, [x10], 8
 	ldp	w6, w7, [x10], 8
@@ -261,8 +261,8 @@ _start:
 	bne	.Lgrid_erase
 
 	// erase blips from fb
-	adr	x10, blip_end
-	adr	x11, erase_end
+	adrf	x10, blip_end
+	adrf	x11, erase_end
 .Lpack_erase:
 	ldp	w4, w5, [x10], 8
 	ldp	w6, w7, [x10], 8

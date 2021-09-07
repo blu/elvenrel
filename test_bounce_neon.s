@@ -44,7 +44,7 @@ _start:
 	svc	0
 
 	// access to fb: addr & len as per SYS_write
-	mov	x2, fb_len
+	ldr	x2, =fb_len
 	adr	x1, fb
 
 	// plot blips in fb
