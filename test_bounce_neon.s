@@ -13,6 +13,12 @@
 	// symbols supplied by CLI
 .endif
 
+// load 'far' address as a +/-4GB offset from PC
+.macro adrf Xn, addr:req
+	adrp	\Xn, \addr
+	add	\Xn, \Xn, :lo12:\addr
+.endm
+
 	.text
 _start:
 	// clear screen
@@ -22,6 +28,29 @@ _start:
 	mov	x0, STDOUT_FILENO
 	svc	0
 
+	// clear fb
+	movi	v0.16b, ' '
+	movi	v1.16b, ' '
+	adrf	x1, fb
+	adrf	x2, fb_end
+	and	x4, x2, -32
+	and	x3, x2, -16
+.Lclear_fb:
+	cmp	x1, x4
+	beq	.Lclear_fb_tail_0
+	stp	q0, q1, [x1], 32
+	b	.Lclear_fb
+.Lclear_fb_tail_0:
+	cmp	x1, x3
+	beq	.Lclear_fb_tail_1
+	str	q0, [x1], 16
+.Lclear_fb_tail_1:
+	cmp	x1, x2
+	beq	.Lfb_done
+	str	b0, [x1], 1
+	b	.Lclear_fb_tail_1
+
+.Lfb_done:
 	// four Q-form regs hold SoA { pos_x, pos_y, step_x, step_y }
 	ldr	q0, =0x00000000000000100000002000000030 // blip{0..3} pos_x
 	ldr	q1, =0x00000000000000100000000000000010 // blip{0..3} pos_y
@@ -45,7 +74,7 @@ _start:
 
 	// access to fb: addr & len as per SYS_write
 	ldr	x2, =fb_len
-	adr	x1, fb
+	adrf	x1, fb
 
 	// plot blips in fb
 	mov	v7.16b, v0.16b
@@ -102,7 +131,6 @@ _start:
 	mov	x0, xzr
 	svc	0
 
-	.section .rodata
 fb_clear_cmd:
 	.ascii "\033[2J"
 fb_clear_len = . - fb_clear_cmd
@@ -114,8 +142,9 @@ fb_cursor_len = . - fb_cursor_cmd
 timespec:
 	.dword 0, 15500000
 
-	.section .data
+	.section .bss
 	.align 6
 fb:
-	.fill FB_DIM_Y * FB_DIM_X, 1, ' '
+	.fill FB_DIM_Y * FB_DIM_X
+fb_end:
 fb_len = . - fb

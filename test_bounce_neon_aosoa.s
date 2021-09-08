@@ -28,6 +28,29 @@ _start:
 	mov	x0, STDOUT_FILENO
 	svc	0
 
+	// clear fb
+	movi	v0.16b, ' '
+	movi	v1.16b, ' '
+	adrf	x1, fb
+	adrf	x2, fb_end
+	and	x4, x2, -32
+	and	x3, x2, -16
+.Lclear_fb:
+	cmp	x1, x4
+	beq	.Lclear_fb_tail_0
+	stp	q0, q1, [x1], 32
+	b	.Lclear_fb
+.Lclear_fb_tail_0:
+	cmp	x1, x3
+	beq	.Lclear_fb_tail_1
+	str	q0, [x1], 16
+.Lclear_fb_tail_1:
+	cmp	x1, x2
+	beq	.Lfb_done
+	str	b0, [x1], 1
+	b	.Lclear_fb_tail_1
+
+.Lfb_done:
 	mov	w4, FB_DIM_X
 	mov	w5, FB_DIM_X - 2
 	mov	w6, FB_DIM_Y - 1
@@ -138,8 +161,9 @@ fb_cursor_len = . - fb_cursor_cmd
 timespec:
 	.dword 0, 15500000
 
-	.section .data
+	.section .bss
 	.align 6
 fb:
-	.fill FB_DIM_Y * FB_DIM_X, 1, ' '
+	.fill FB_DIM_Y * FB_DIM_X
+fb_end:
 fb_len = . - fb
