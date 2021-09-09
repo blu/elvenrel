@@ -30,7 +30,6 @@ _start:
 
 	// clear fb
 	movi	v0.16b, ' '
-	movi	v1.16b, ' '
 	adrf	x1, fb
 	adrf	x2, fb_end
 	and	x4, x2, -32
@@ -38,7 +37,7 @@ _start:
 .Lclear_fb:
 	cmp	x1, x4
 	beq	.Lclear_fb_tail_0
-	stp	q0, q1, [x1], 32
+	stp	q0, q0, [x1], 32
 	b	.Lclear_fb
 .Lclear_fb_tail_0:
 	cmp	x1, x3
