@@ -609,7 +609,7 @@ term:
 static void print_usage(char **argv)
 {
 	printf("usage: %s <elf_rel_file> [<elf_rel_file>] ..\n"
-#if __APPLE__ == 0
+#if __linux__ != 0
 	       "\t--filter <string> : filter file mappings containing the specified string\n"
 #endif
 	       "\t--quiet           : suppress all reports\n"
@@ -619,7 +619,7 @@ static void print_usage(char **argv)
 int main(int argc, char **argv)
 {
 	size_t areas_capacity = 0, objs_capacity = 0;
-#if __APPLE__ == 0
+#if __linux__ != 0
 	struct char_ptr_arr_t areas = { .count = 0, .arr = NULL };
 #endif
 	struct char_ptr_arr_t objs = { .count = 0, .arr = NULL };
@@ -644,7 +644,7 @@ int main(int argc, char **argv)
 			continue;
 		}
 
-#if __APPLE__ == 0
+#if __linux__ != 0
 		if (!strcmp(argv[i], "--filter")) {
 			if (++i == argc) {
 				print_usage(argv);
@@ -693,9 +693,8 @@ int main(int argc, char **argv)
 		}
 
 		/* Get two distinct mappings to the same file -- 1st to be used for
-		   writable sections, 2nd -- for the read-only/exec sections; pass
-		   the 1st mapping to the ELF parser, but also make it aware of the
-		   2nd mapping via a ptrdiff */
+		   writable sections, 2nd -- for the read-only/exec sections; use
+		   the 1st mapping for libelf purposes */
 		p = mmap(NULL, sb.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
 		q = mmap(NULL, sb.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
 		close(fd);
@@ -705,7 +704,6 @@ int main(int argc, char **argv)
 			return -1;
 		}
 
-		/* Process ELF via the 1st mapping */
 		elf = elf_memory(p, sb.st_size);
 
 		if (elf == NULL) {
