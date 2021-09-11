@@ -1,6 +1,6 @@
 ## elvenrel
 
-Elven Relativism -- relocation and execution of aarch64 ELF relocatable objects (REL)
+Elven Relativism -- relocation and execution of aarch64 ELF relocatable objects (REL) on Linux and macOS.
 
 Program loads a multitude of ELF REL files, resolves all relocations (currently only SHT_RELA) and if symbol `_start` in some section `.text` is found, passes control to the former.
 
@@ -8,8 +8,8 @@ Program loads a multitude of ELF REL files, resolves all relocations (currently 
 
 * RELs loaded in the order specified on the command line; all relocations in a given REL performed at its loading time.
 * Missing-symbol (SHN_UNDEF) resolution via reverse-direction search among the preceding RELs; first-match deterministic.
-* Support for RO sections `.rodata` and `.text`; every other type of section is RW; `.bss` addressing may take HI21/LO12.
-* Address-space sanitation -- disposing of pre-existing VMAs (*VMA filtering*) via string matching to VMA backing path.
+* Support for RO sections `.rodata` and `.text`; every other type of section is RW.
+* Address-space sanitation (linux-only) -- disposing of pre-existing VMAs (*VMA filtering*) via string matching to VMA backing path.
 
 ## ToDo
 
@@ -24,9 +24,13 @@ Files used, with or without modifications, from external repositories:
 	linux.org/ arch/arm64/kernel/module.c    -> reloc_add_aarch64.c
 	linux.org/ arch/arm64/lib/strlen.S       -> strlen_linux.s
 
-## Building
+## Building: linux
 
 	$ make all
+
+## Building: macos
+
+	$ make -f Makefile.macos all
 
 ## Usage
 

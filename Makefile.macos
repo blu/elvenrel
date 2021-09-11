@@ -1,0 +1,21 @@
+SRC := reloc.c reloc_add_aarch64.c insn.h
+TARGET := elvenrel
+CFLAGS += -std=gnu11 -Ofast -DNDEBUG -DPAGE_SIZE=$(shell getconf PAGE_SIZE) -fno-stack-protector -fPIC -I/opt/homebrew/include
+LDFLAGS += /opt/homebrew/lib/libelf.a
+ASFLAGS += --target=aarch64-none-linux-gnu
+# Optional test objects built by target ALL
+REL := test_text_macos.o
+
+OBJ := $(addsuffix .o, $(basename $(filter %.s %.c %.cpp, $(SRC))))
+
+$(TARGET): $(OBJ)
+	$(CC) $^ $(LDFLAGS) -o $(TARGET)
+
+reloc.o: reloc.c char_ptr_arr.h
+
+reloc_add_aarch64.o: reloc_add_aarch64.c insn.h
+
+all: $(TARGET) $(REL)
+
+clean:
+	rm -f $(TARGET) $(OBJ) $(REL)

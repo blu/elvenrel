@@ -7,7 +7,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#if __APPLE__ != 0
+#include <libelf/libelf.h>
+#else
 #include <libelf.h>
+#endif
 #include <fcntl.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -16,7 +20,23 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 
+#if __APPLE__ != 0
+#include "char_ptr_arr.h"
+#else
 #include "vma.h"
+#endif
+
+#if __APPLE__ != 0
+#ifndef EM_AARCH64
+#define EM_AARCH64 183
+#endif
+
+#ifndef MAP_POPULATE
+#define MAP_POPULATE 0
+#endif
+
+typedef Elf64_Half Elf64_Section;
+#endif
 
 int apply_relocate_add(Elf64_Shdr **sechdrs,
 					   unsigned int symsec,
@@ -63,12 +83,12 @@ const char *str_from_st_type(uint8_t x)
 		return "STT_TLS";
 	case STT_NUM:
 		return "STT_NUM";
-#if 0
 	case STT_LOOS:
 		return "STT_LOOS";
-#endif
+#if 0
 	case STT_GNU_IFUNC:
 		return "STT_GNU_IFUNC";
+#endif
 	case STT_HIOS:
 		return "STT_HIOS";
 	case STT_LOPROC:
@@ -90,12 +110,12 @@ const char *str_from_st_bind(uint8_t x)
 		return "STB_WEAK";
 	case STB_NUM:
 		return "STB_NUM";
-#if 0
 	case STB_LOOS:
 		return "STB_LOOS";
-#endif
+#if 0
 	case STB_GNU_UNIQUE:
 		return "STB_GNU_UNIQUE";
+#endif
 	case STB_HIOS:
 		return "STB_HIOS";
 	case STB_LOPROC:
@@ -253,14 +273,14 @@ static int
 	_load_elf_file_details(
 		Elf *elf,
 		ElfDetails *ret_details,
-		ptrdiff_t diff_exec)
+		void *rawdata_rw,
+		void *rawdata_ro)
 {
 	ElfDetails details;
 	char *ehdr_ident;
 	Elf64_Ehdr *ehdr64;
 	Elf64_Shdr *shdr64;
 	Elf_Scn *scn;
-	Elf_Data *data;
 	const char *scn_name;
 	Elf64_Shdr **section_list;
 	size_t scn_idx, n_elf_scns;
@@ -434,33 +454,26 @@ static int
 			}
 		}
 
-		/* Resolve the vaddr and size of ELF section data */
-		if ((data = elf_getdata(scn, 0)) != NULL) {
-			if (shdr64->sh_size != data->d_size) {
-				return -1;
-			}
-			/* Ignore empty sections */
-			if (data->d_size != 0) {
-				/* Section .bss does not have file backing */
-				if (scn_idx == bss_idx) {
-					const int prot_rw = PROT_READ | PROT_WRITE;
-					const int flag_priv_anon = MAP_PRIVATE | MAP_ANONYMOUS | MAP_POPULATE;
+		/* Resolve the vaddr of non-empty ELF section data */
+		if (shdr64->sh_size != 0) {
+			/* Section .bss does not have file backing */
+			if (scn_idx == bss_idx) {
+				const int prot_rw = PROT_READ | PROT_WRITE;
+				const int flag_priv_anon = MAP_PRIVATE | MAP_ANONYMOUS | MAP_POPULATE;
 
-					void *p = mmap(NULL, data->d_size, prot_rw, flag_priv_anon, -1, 0);
+				void *p = mmap(NULL, shdr64->sh_size, prot_rw, flag_priv_anon, -1, 0);
 
-					if (p == MAP_FAILED) {
-						fprintf(stderr, "error: cannot mmap bss\n");
-						return -1;
-					}
+				if (p == MAP_FAILED) {
+					fprintf(stderr, "error: cannot mmap bss\n");
+					return -1;
+				}
 
-					shdr64->sh_addr = (Elf64_Addr)p;
+				shdr64->sh_addr = (Elf64_Addr)p;
+			} else {
+				if (scn_idx == text_idx || scn_idx == rodata_idx) {
+					shdr64->sh_addr = (Elf64_Addr)(rawdata_ro + shdr64->sh_offset);
 				} else {
-					shdr64->sh_addr = (Elf64_Addr)data->d_buf;
-
-					if (scn_idx == text_idx ||
-					    scn_idx == rodata_idx) {
-						shdr64->sh_addr += diff_exec;
-					}
+					shdr64->sh_addr = (Elf64_Addr)(rawdata_rw + shdr64->sh_offset);
 				}
 			}
 		}
@@ -509,7 +522,8 @@ static int
 	relocate_elf_load_cu(
 		Elf *elf,
 		void **start,
-		ptrdiff_t diff_exec,
+		void *rawdata_rw,
+		void *rawdata_ro,
 		int flag_quiet)
 {
 	ElfDetails details = NULL;
@@ -517,8 +531,12 @@ static int
 	uint64 n_symbols, i;
 	int rc;
 
+	if (!elf || !start || !rawdata_rw || !rawdata_ro) {
+		return -1;
+	}
+
 	/* Load ELF file section and symbol tables */
-	rc = _load_elf_file_details(elf, &details, diff_exec);
+	rc = _load_elf_file_details(elf, &details, rawdata_rw, rawdata_ro);
 	if (rc)
 		goto term;
 
@@ -554,7 +572,7 @@ static int
 		}
 
 		if (!flag_quiet) {
-			printf("%2ld: %016lx %-13s %-14s %-17s %s\n",
+			printf("%2lu: %016lx %-13s %-14s %-17s %s\n",
 				i,
 				symtab->st_value,
 				str_from_st_type(ELF64_ST_TYPE(symtab->st_info)),
@@ -591,7 +609,9 @@ term:
 static void print_usage(char **argv)
 {
 	printf("usage: %s <elf_rel_file> [<elf_rel_file>] ..\n"
+#if __APPLE__ == 0
 	       "\t--filter <string> : filter file mappings containing the specified string\n"
+#endif
 	       "\t--quiet           : suppress all reports\n"
 	       "\t--help            : this message\n", argv[0]);
 }
@@ -599,7 +619,9 @@ static void print_usage(char **argv)
 int main(int argc, char **argv)
 {
 	size_t areas_capacity = 0, objs_capacity = 0;
+#if __APPLE__ == 0
 	struct char_ptr_arr_t areas = { .count = 0, .arr = NULL };
+#endif
 	struct char_ptr_arr_t objs = { .count = 0, .arr = NULL };
 	Elf *prev_elf = NULL;
 	void *start = NULL;
@@ -622,6 +644,7 @@ int main(int argc, char **argv)
 			continue;
 		}
 
+#if __APPLE__ == 0
 		if (!strcmp(argv[i], "--filter")) {
 			if (++i == argc) {
 				print_usage(argv);
@@ -634,6 +657,7 @@ int main(int argc, char **argv)
 			continue;
 		}
 
+#endif
 		/* Unprefixed arg must be a file */
 		if (objs.count == objs_capacity) {
 			objs.arr = (char **)realloc(objs.arr, objs_capacity = (objs_capacity + 1) * 2);
@@ -698,7 +722,7 @@ int main(int argc, char **argv)
 		ehdr64->e_entry = (Elf64_Addr)prev_elf;
 		prev_elf = elf;
 
-		if (relocate_elf_load_cu(elf, &start, q - p, flag_quiet)) {
+		if (relocate_elf_load_cu(elf, &start, p, q, flag_quiet)) {
 			fprintf(stderr, "error: cannot relocate_elf_load_cu\n");
 			return -1;
 		}
@@ -709,9 +733,11 @@ int main(int argc, char **argv)
 		}
 	}
 
+#if __linux__ != 0
 	if (areas.count && areas.arr != NULL)
 		vma_process(&areas, flag_quiet);
 
+#endif
 	if (start != NULL)
 		((void (*)(void))start)();
 
