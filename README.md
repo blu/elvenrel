@@ -24,13 +24,27 @@ Files used, with or without modifications, from external repositories:
 	linux.org/ arch/arm64/kernel/module.c    -> reloc_add_aarch64.c
 	linux.org/ arch/arm64/lib/strlen.S       -> strlen_linux.s
 
-## Building: linux
+## Building
 
 	$ make all
 
-## Building: macos
+## Building with own assembler
 
-	$ make -f Makefile.macos all
+For instance, if you have `gas` on macos and prefer to use that:
+
+	$ make AS=full-path-to-gas all
+
+Building `gas` itself from source:
+
+	$ git clone git://sourceware.org/git/binutils-gdb.git && cd binutils-gdb
+	$ cd bfd
+	$ ./configure --target=aarch64-linux-gnu && make && cd -
+	$ cd libiberty
+	$ ./configure --target=aarch64-linux-gnu && make && cd -
+	$ cd opcodes
+	$ ./configure --target=aarch64-linux-gnu && make && cd -
+	$ cd gas
+	$ ./configure --target=aarch64-linux-gnu && make && cd -
 
 ## Usage
 
