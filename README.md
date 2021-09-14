@@ -26,33 +26,43 @@ Files used, with or without modifications, from external repositories:
 
 ## Building
 
-	$ make all
+Sole prerequisite is `libelf`. On macOS `homebrew` provides v0.8.13; on Linux there should be a dedicated package with an up-to-date version for your distro of choice. That provided:
+
+```sh
+$ make all
+```
 
 ## Building with own assembler
 
-For instance, if you have `gas` on macos and prefer to use that:
+If you have `gas` on macOS and prefer to use that:
 
-	$ make AS=full-path-to-gas all
+```sh
+$ make AS=/full/path/to/gas all
+```
 
 Building `gas` itself from source:
 
-	$ git clone git://sourceware.org/git/binutils-gdb.git && cd binutils-gdb
-	$ cd bfd
-	$ ./configure --target=aarch64-linux-gnu && make && cd -
-	$ cd libiberty
-	$ ./configure --target=aarch64-linux-gnu && make && cd -
-	$ cd opcodes
-	$ ./configure --target=aarch64-linux-gnu && make && cd -
-	$ cd gas
-	$ ./configure --target=aarch64-linux-gnu && make && cd -
+```sh
+$ git clone git://sourceware.org/git/binutils-gdb.git && cd binutils-gdb
+$ cd bfd
+$ ./configure --target=aarch64-linux-gnu && make && cd -
+$ cd libiberty
+$ ./configure --target=aarch64-linux-gnu && make && cd -
+$ cd opcodes
+$ ./configure --target=aarch64-linux-gnu && make && cd -
+$ cd gas
+$ ./configure --target=aarch64-linux-gnu && make && cd -
+```
 
 ## Usage
 
 ```sh
 $ ./elvenrel test_cross_0.o test_cross_1.o # order of RELs matters for symbol resolution; undefined symbols in later RELs are sought in earlier RELs
-
+```
+```sh
 $ ./elvenrel test_rodata.o --filter /lib/aarch64-linux-gnu # before executing the REL dispose of VMAs from file mappings containing /lib/aarch64-linux-gnu in the path
-
+```
+```sh
 $ ./elvenrel test_data.o --filter [heap] # before executing the REL dispose of the VMA designated as `[heap]`, i.e. the process heap
 ```
 
