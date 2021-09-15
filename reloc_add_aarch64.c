@@ -24,9 +24,11 @@ typedef uint64_t	u64;
 #define fallthrough __attribute__((__fallthrough__))
 #define BIT(nr) (1UL << (nr))
 
-#if __APPLE__ != 0
-#define __always_inline __attribute__((__always_inline__))
+#ifndef __always_inline
+#define __always_inline inline __attribute__((__always_inline__))
+#endif
 
+#if __APPLE__ != 0
 #ifndef R_AARCH64_NONE
 
 /*
