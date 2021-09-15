@@ -1,7 +1,3 @@
-#if __aarch64__ == 0
-#error wrong target architecture
-#endif
-
 #include <stdio.h>
 #include <stdint.h>
 #if __APPLE__ != 0
