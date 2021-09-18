@@ -651,7 +651,7 @@ int main(int argc, char **argv)
 				return -1;
 			}
 			if (areas.count == areas_capacity) {
-				areas.arr = (char **)realloc(areas.arr, areas_capacity = (areas_capacity + 1) * 2);
+				areas.arr = (char **)realloc(areas.arr, sizeof(*areas.arr) * (areas_capacity = (areas_capacity + 1) * 2));
 			}
 			areas.arr[areas.count++] = argv[i];
 			continue;
@@ -660,7 +660,7 @@ int main(int argc, char **argv)
 #endif
 		/* Unprefixed arg must be a file */
 		if (objs.count == objs_capacity) {
-			objs.arr = (char **)realloc(objs.arr, objs_capacity = (objs_capacity + 1) * 2);
+			objs.arr = (char **)realloc(objs.arr, sizeof(*objs.arr) * (objs_capacity = (objs_capacity + 1) * 2));
 		}
 
 		objs.arr[objs.count++] = argv[i];
