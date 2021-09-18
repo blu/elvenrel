@@ -39,8 +39,8 @@ typedef Elf64_Half Elf64_Section;
 #endif
 
 int apply_relocate_add(Elf64_Shdr **sechdrs,
-					   unsigned int symsec,
-					   unsigned int relsec);
+                       unsigned int symsec,
+                       unsigned int relsec);
 
 /* Following code based on IBM s390 ELF relocation sample */
 /* https://www.ibm.com/docs/en/zos/2.2.0?topic=file-example-relocating-addresses-within-elf */
@@ -267,12 +267,18 @@ static int
 	return 0;
 }
 
+enum {
+	REL_CAPS_RW_SECTIONS = 1U, /* REL has RW SHT_PROGBITS sections */
+	REL_CAPS_RO_SECTIONS = 2U  /* REL has RO SHT_PROGBITS sections */
+};
+
 /* Load ELF file section and symbol tables; relocate sections and symbols based on loading/mapping vaddr
 */
 static int
 	_load_elf_file_details(
 		Elf *elf,
 		ElfDetails *ret_details,
+		unsigned *ret_caps,
 		void *rawdata_rw,
 		void *rawdata_ro)
 {
@@ -293,6 +299,7 @@ static int
 	Elf64_Section text_idx = 0;
 	Elf64_Section rel_text_idx = 0;
 	Elf64_Section rela_text_idx = 0;
+	unsigned caps = 0;
 	int rc;
 
 	/* Determine if 64-bit or 32-bit ELF file */
@@ -472,8 +479,12 @@ static int
 			} else {
 				if (scn_idx == text_idx || scn_idx == rodata_idx) {
 					shdr64->sh_addr = (Elf64_Addr)(rawdata_ro + shdr64->sh_offset);
+					caps |= REL_CAPS_RO_SECTIONS;
 				} else {
 					shdr64->sh_addr = (Elf64_Addr)(rawdata_rw + shdr64->sh_offset);
+					if (shdr64->sh_type == SHT_PROGBITS) {
+						caps |= REL_CAPS_RW_SECTIONS;
+					}
 				}
 			}
 		}
@@ -493,6 +504,7 @@ static int
 
 	/* Return the ElfDetails object to the caller */
 	*ret_details = details;
+	*ret_caps = caps;
 
 	return 0;
 }
@@ -522,6 +534,7 @@ static int
 	relocate_elf_load_cu(
 		Elf *elf,
 		void **start,
+		unsigned *caps,
 		void *rawdata_rw,
 		void *rawdata_ro,
 		int flag_quiet)
@@ -531,12 +544,12 @@ static int
 	uint64 n_symbols, i;
 	int rc;
 
-	if (!elf || !start || !rawdata_rw || !rawdata_ro) {
+	if (!elf || !start || !caps || !rawdata_rw || !rawdata_ro) {
 		return -1;
 	}
 
 	/* Load ELF file section and symbol tables */
-	rc = _load_elf_file_details(elf, &details, rawdata_rw, rawdata_ro);
+	rc = _load_elf_file_details(elf, &details, caps, rawdata_rw, rawdata_ro);
 	if (rc)
 		goto term;
 
@@ -616,13 +629,22 @@ static void print_usage(char **argv)
 	       "\t--help            : this message\n", argv[0]);
 }
 
+struct rel_info_t {
+	char *name;   /* File name */
+	void *vma_rw; /* Ptr to RW VMA */
+	size_t size;  /* File size */
+};
+
 int main(int argc, char **argv)
 {
 	size_t areas_capacity = 0, objs_capacity = 0;
 #if __linux__ != 0
 	struct char_ptr_arr_t areas = { .count = 0, .arr = NULL };
 #endif
-	struct char_ptr_arr_t objs = { .count = 0, .arr = NULL };
+	struct {
+		size_t count;
+		struct rel_info_t *arr;
+	} objs = { .count = 0, .arr = NULL };
 	Elf *prev_elf = NULL;
 	void *start = NULL;
 	int flag_quiet = 0;
@@ -660,10 +682,10 @@ int main(int argc, char **argv)
 #endif
 		/* Unprefixed arg must be a file */
 		if (objs.count == objs_capacity) {
-			objs.arr = (char **)realloc(objs.arr, sizeof(*objs.arr) * (objs_capacity = (objs_capacity + 1) * 2));
+			objs.arr = (struct rel_info_t *)realloc(objs.arr, sizeof(*objs.arr) * (objs_capacity = (objs_capacity + 1) * 2));
 		}
 
-		objs.arr[objs.count++] = argv[i];
+		objs.arr[objs.count++].name = argv[i];
 	}
 
 	if (objs.count == 0) {
@@ -678,8 +700,9 @@ int main(int argc, char **argv)
 		void *p, *q;
 		Elf *elf;
 		Elf64_Ehdr *ehdr64;
+		unsigned caps;
 
-		const int fd = open(objs.arr[i], O_RDONLY);
+		const int fd = open(objs.arr[i].name, O_RDONLY);
 
 		if (fd < 0) {
 			fprintf(stderr, "error: cannot open file\n");
@@ -720,14 +743,40 @@ int main(int argc, char **argv)
 		ehdr64->e_entry = (Elf64_Addr)prev_elf;
 		prev_elf = elf;
 
-		if (relocate_elf_load_cu(elf, &start, p, q, flag_quiet)) {
+		if (relocate_elf_load_cu(elf, &start, &caps, p, q, flag_quiet)) {
 			fprintf(stderr, "error: cannot relocate_elf_load_cu\n");
 			return -1;
 		}
 
-		if (mprotect(q, sb.st_size, PROT_READ | PROT_EXEC)) {
-			fprintf(stderr, "error: cannot mprotect\n");
-			return -1;
+		/* Finalize RO mapping depending on presence of RO SHT_PROGBITS */
+		if (caps & REL_CAPS_RO_SECTIONS) {
+			if (mprotect(q, sb.st_size, PROT_READ | PROT_EXEC)) {
+				fprintf(stderr, "error: cannot mprotect\n");
+				return -1;
+			}
+		} else {
+			if (munmap(q, sb.st_size)) {
+				fprintf(stderr, "error: cannot munmap\n");
+				return -1;
+			}
+		}
+
+		/* Defer unmapping of RW mapping depending on presence of RW SHT_PROGBITS */
+		if (caps & REL_CAPS_RW_SECTIONS) {
+			objs.arr[i].vma_rw = NULL;
+		} else {
+			objs.arr[i].vma_rw = p;
+			objs.arr[i].size = sb.st_size;
+		}
+	}
+
+	/* All SHN_UNDEFs have been processed -- unmap unneeded RW mappings */
+	for (i = 0; i < objs.count; ++i) {
+		if (objs.arr[i].vma_rw != NULL) {
+			if (munmap(objs.arr[i].vma_rw, objs.arr[i].size)) {
+				fprintf(stderr, "error: cannot munmap\n");
+				return -1;
+			}
 		}
 	}
 
