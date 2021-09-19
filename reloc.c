@@ -272,7 +272,7 @@ enum {
 	REL_CAPS_RO_SECTIONS = 2U  /* REL has RO SHT_PROGBITS sections */
 };
 
-/* Load ELF file section and symbol tables; relocate sections and symbols based on loading/mapping vaddr
+/* Load ELF file section and symbol tables; relocate sections and symbols based on loading/mapping VA
 */
 static int
 	_load_elf_file_details(
@@ -461,7 +461,7 @@ static int
 			}
 		}
 
-		/* Resolve the vaddr of non-empty ELF section data */
+		/* Resolve the VA of non-empty ELF section data */
 		if (shdr64->sh_size != 0) {
 			/* Section .bss does not have file backing */
 			if (scn_idx == bss_idx) {
@@ -528,7 +528,7 @@ static int
 	return 0;
 }
 
-/* Load ELF file, relocate based on loading/mapping vaddr, and print symtab
+/* Load ELF file, relocate based on loading/mapping VA, and print symtab
 */
 static int
 	relocate_elf_load_cu(
@@ -715,9 +715,9 @@ int main(int argc, char **argv)
 			return -1;
 		}
 
-		/* Get two distinct mappings to the same file -- 1st to be used for
-		   writable sections, 2nd -- for the read-only/exec sections; use
-		   the 1st mapping for libelf purposes */
+		/* Get two distinct mappings to the same file -- first to be used for
+		   writable sections, second -- for the read-only/exec sections; use
+		   the first mapping for libelf purposes */
 		p = mmap(NULL, sb.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
 		q = mmap(NULL, sb.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
 		close(fd);
