@@ -163,8 +163,9 @@ fb_cursor_cmd:
 	.ascii "\033[1;1H"
 fb_cursor_len = . - fb_cursor_cmd
 
+	.align 3
 timeval:
-	.dword 0, 15500
+	.dword 0, 11500
 
 	.section .bss
 	.align 6

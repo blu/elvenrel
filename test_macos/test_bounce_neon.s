@@ -51,10 +51,10 @@ _start:
 
 .Lfb_done:
 	// four Q-form regs hold SoA { pos_x, pos_y, step_x, step_y }
-	ldr	q0, blip_init +  0 // blip{0..3} pos_x
-	ldr	q1, blip_init + 16 // blip{0..3} pos_y
-	ldr	q2, blip_init + 32 // blip{0..3} step_x
-	ldr	q3, blip_init + 48 // blip{0..3} step_y
+	ldr	q0, blip +  0 // blip{0..3} pos_x
+	ldr	q1, blip + 16 // blip{0..3} pos_y
+	ldr	q2, blip + 32 // blip{0..3} step_x
+	ldr	q3, blip + 48 // blip{0..3} step_y
 
 	mov	w4, FB_DIM_X
 	mov	w5, FB_DIM_X - 2
@@ -137,11 +137,11 @@ _start:
 	svc	0
 
 	.align 4
-blip_init:
-	.dword 0x0000002000000030, 0x0000000000000010 // blip{0..3} pos_x
-	.dword 0x0000000000000010, 0x0000000000000010 // blip{0..3} pos_y
-	.dword 0x0000000100000001, 0x0000000100000001 // blip{0..3} step_x
-	.dword 0x00000001ffffffff, 0x00000001ffffffff // blip{0..3} step_y
+blip:
+	.word 0x00000030, 0x00000020, 0x00000010, 0x00000000 // blip{0..3} pos_x
+	.word 0x00000010, 0x00000000, 0x00000010, 0x00000000 // blip{0..3} pos_y
+	.word 0x00000001, 0x00000001, 0x00000001, 0x00000001 // blip{0..3} step_x
+	.word 0xffffffff, 0x00000001, 0xffffffff, 0x00000001 // blip{0..3} step_y
 
 fb_clear_cmd:
 	.ascii "\033[2J"
@@ -151,8 +151,9 @@ fb_cursor_cmd:
 	.ascii "\033[1;1H"
 fb_cursor_len = . - fb_cursor_cmd
 
+	.align 3
 timeval:
-	.dword 0, 15500
+	.dword 0, 11500
 
 	.section .bss
 	.align 6
