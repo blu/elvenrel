@@ -8,7 +8,7 @@
 .if 0
 	.equ FB_DIM_X, 203
 	.equ FB_DIM_Y, 48
-	.equ FRAMES, 1024
+	.equ FRAMES, 2048
 .else
 	// symbols supplied by CLI
 .endif
@@ -50,11 +50,20 @@ _start:
 	b	.Lclear_fb_tail_1
 
 .Lfb_done:
-	mov	w5, wzr // blip pos_x
-	mov	w6, wzr // blip pos_y
-	mov	x7, FRAMES
-	mov	w10, 1 // blip step_x
-	mov	w11, 1 // blip step_y
+	// four Q-form regs hold SoA { pos_x, pos_y, step_x, step_y }
+	ldr	q0, blip_init +  0 // blip{0..3} pos_x
+	ldr	q1, blip_init + 16 // blip{0..3} pos_y
+	ldr	q2, blip_init + 32 // blip{0..3} step_x
+	ldr	q3, blip_init + 48 // blip{0..3} step_y
+
+	mov	w4, FB_DIM_X
+	mov	w5, FB_DIM_X - 2
+	mov	w6, FB_DIM_Y - 1
+	fmov	s4, w4
+	dup	v5.4s, w5
+	dup	v6.4s, w6
+
+	mov	x9, FRAMES
 .Lframe:
 	// reset cursor
 	mov	x16, SYS_write
@@ -64,37 +73,52 @@ _start:
 	svc	0
 
 	// access to fb: addr & len as per SYS_write
-	ldr	w2, =fb_len
+	ldr	x2, =fb_len
 	adrf	x1, fb
 
-	// plot blip in fb
+	// plot blips in fb
+	mov	v7.16b, v0.16b
+	mla	v7.4s, v1.4s, v4.s[0]
+
+	fmov	w4, s7
+	mov	w5, v7.s[1]
+	mov	w6, v7.s[2]
+	mov	w7, v7.s[3]
+
 	mov	w3, 0x5d5b
-	mov	w4, FB_DIM_X
-	madd	w4, w4, w6, w5
 	strh	w3, [x1, x4]
+	strh	w3, [x1, x5]
+	strh	w3, [x1, x6]
+	strh	w3, [x1, x7]
 
-	// update position
-	add	w5, w5, w10
-	add	w6, w6, w11
+	// update positions
+	add	v0.4s, v0.4s, v2.4s
+	add	v1.4s, v1.4s, v3.4s
 
-	// check bounds & update step accordingly
-	cmp	w5, FB_DIM_X - 2
-	ccmp	w5, 0, 4, NE
-	cneg	w10, w10, EQ
-
-	cmp	w6, FB_DIM_Y - 1
-	ccmp	w6, 0, 4, NE
-	cneg	w11, w11, EQ
+	// check bounds & update steps accordingly
+	cmeq	v7.4s, v0.4s, v5.4s
+	cmeq	v8.4s, v0.4s, 0
+	cmeq	v9.4s, v1.4s, v6.4s
+	cmeq	v10.4s, v1.4s, 0
+	orr	v7.16b, v7.16b, v8.16b
+	orr	v9.16b, v9.16b, v10.16b
+	eor	v2.16b, v7.16b, v2.16b
+	eor	v3.16b, v9.16b, v3.16b
+	sub	v2.4s, v2.4s, v7.4s
+	sub	v3.4s, v3.4s, v9.4s
 
 	// output fb
 	mov	x16, SYS_write
 	mov	x0, STDOUT_FILENO
 	svc	0
 
-	// erase blip from fb
+	// erase blips from fb
 	adrf	x1, fb
 	mov	w3, 0x2020
 	strh	w3, [x1, x4]
+	strh	w3, [x1, x5]
+	strh	w3, [x1, x6]
+	strh	w3, [x1, x7]
 
 	// xnu has no nanosleep
 	mov	x16, SYS_select
@@ -105,12 +129,19 @@ _start:
 	mov	x0, xzr
 	svc	0
 
-	subs	x7, x7, 1
+	subs	x9, x9, 1
 	bne	.Lframe
 
 	mov	x16, SYS_exit
 	mov	x0, xzr
 	svc	0
+
+	.align 4
+blip_init:
+	.dword 0x0000002000000030, 0x0000000000000010 // blip{0..3} pos_x
+	.dword 0x0000000000000010, 0x0000000000000010 // blip{0..3} pos_y
+	.dword 0x0000000100000001, 0x0000000100000001 // blip{0..3} step_x
+	.dword 0x00000001ffffffff, 0x00000001ffffffff // blip{0..3} step_y
 
 fb_clear_cmd:
 	.ascii "\033[2J"
