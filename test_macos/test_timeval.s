@@ -36,11 +36,10 @@ advance_timeval_us:
 	blo	.Lupdate_only_us
 	add	x3, x3, 1
 	stp	x3, x2, [x0]
-	b	.Ldone
+	ret
 .Lupdate_only_us:
 	add	w4, w4, w1
 	str	x4, [x0, 8]
-.Ldone:
 	ret
 
 _start:
@@ -91,7 +90,7 @@ _start:
 	mov	x0, STDOUT_FILENO
 	svc	0
 
-	// xnu usleep AKA select
+	// xnu has no nano/usleep -- use select with empty fd sets
 	mov	x16, SYS_select
 	adr	x4, timeval_select
 	mov	x3, xzr
