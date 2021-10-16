@@ -45,8 +45,10 @@ reloc_add_aarch64.o: reloc_add_aarch64.c insn.h
 vma.o: vma.cpp vma.h char_ptr_arr.h
 
 all: $(TARGET)
+	$(MAKE) -C test_common all
 	$(MAKE) -C $(TEST_SUBDIR) all
 
 clean:
 	rm -f $(TARGET) $(OBJ)
+	$(MAKE) -C test_common clean
 	$(MAKE) -C $(TEST_SUBDIR) clean
