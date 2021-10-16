@@ -66,6 +66,18 @@ $ ./elvenrel test_rodata.o --filter /lib/aarch64-linux-gnu # before executing th
 $ ./elvenrel test_data.o --filter [heap] # before executing the REL dispose of the VMA designated as `[heap]`, i.e. the process heap
 ```
 
+## Using --break option
+
+Using `--break` raises a `SIGTRAP` right before passing control to REL for quick debugging. Unfortunately both GDB and LLDB currently get stuck on the instruction that caused the trap. To progress one needs to manually move the program counter past the break point:
+
+```sh
+(gdb) set $pc += 4
+```
+
+```sh
+(lldb) register write pc `$pc + 4`
+```
+
 ## Screenshots
 
 ![hello_sample](image/screenshot000.png "hello sample")

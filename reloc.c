@@ -626,6 +626,7 @@ static void print_usage(char **argv)
 	       "\t--filter <string> : filter file mappings containing the specified string\n"
 #endif
 	       "\t--quiet           : suppress all reports\n"
+	       "\t--break           : raise SIGTRAP before passing control to REL\n"
 	       "\t--help            : this message\n", argv[0]);
 }
 
@@ -648,6 +649,7 @@ int main(int argc, char **argv)
 	Elf *prev_elf = NULL;
 	void *start = NULL;
 	int flag_quiet = 0;
+	int flag_break = 0;
 	size_t i;
 
 	if (argc == 1) {
@@ -663,6 +665,11 @@ int main(int argc, char **argv)
 
 		if (!strcmp(argv[i], "--quiet")) {
 			flag_quiet = 1;
+			continue;
+		}
+
+		if (!strcmp(argv[i], "--break")) {
+			flag_break = 1;
 			continue;
 		}
 
@@ -785,8 +792,12 @@ int main(int argc, char **argv)
 		vma_process(&areas, flag_quiet);
 
 #endif
-	if (start != NULL)
+	if (start != NULL) {
+		if (flag_break) {
+			__asm__ __volatile__ ("brk 42");
+		}
 		((void (*)(void))start)();
+	}
 
 	return 0;
 }
