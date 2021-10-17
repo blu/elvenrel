@@ -56,8 +56,7 @@ _start:
 	mov	w10, 1 // blip step_x
 	mov	w11, 1 // blip step_y
 .Lframe:
-	// reset cursor
-	mov	x16, SYS_write
+	// reset cursor; x16 = SYS_write
 	mov	x2, fb_cursor_len
 	adr	x1, fb_cursor_cmd
 	mov	x0, STDOUT_FILENO
@@ -86,8 +85,7 @@ _start:
 	ccmp	w6, 0, 4, NE
 	cneg	w11, w11, EQ
 
-	// output fb
-	mov	x16, SYS_write
+	// output fb; x16 = SYS_write
 	mov	x0, STDOUT_FILENO
 	svc	0
 
@@ -105,6 +103,7 @@ _start:
 	mov	x0, xzr
 	svc	0
 
+	mov	x16, SYS_write
 	subs	x7, x7, 1
 	bne	.Lframe
 
@@ -122,7 +121,7 @@ fb_cursor_len = . - fb_cursor_cmd
 
 	.align 3
 timeval:
-	.dword 0, 13400
+	.dword 0, 13000
 
 	.section .bss
 	.align 6

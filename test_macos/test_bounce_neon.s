@@ -65,8 +65,7 @@ _start:
 
 	mov	x9, FRAMES
 .Lframe:
-	// reset cursor
-	mov	x16, SYS_write
+	// reset cursor; x16 = SYS_write
 	mov	x2, fb_cursor_len
 	adr	x1, fb_cursor_cmd
 	mov	x0, STDOUT_FILENO
@@ -107,8 +106,7 @@ _start:
 	sub	v2.4s, v2.4s, v7.4s
 	sub	v3.4s, v3.4s, v9.4s
 
-	// output fb
-	mov	x16, SYS_write
+	// output fb; x16 = SYS_write
 	mov	x0, STDOUT_FILENO
 	svc	0
 
@@ -129,6 +127,7 @@ _start:
 	mov	x0, xzr
 	svc	0
 
+	mov	x16, SYS_write
 	subs	x9, x9, 1
 	bne	.Lframe
 
@@ -153,7 +152,7 @@ fb_cursor_len = . - fb_cursor_cmd
 
 	.align 3
 timeval:
-	.dword 0, 13400
+	.dword 0, 13000
 
 	.section .bss
 	.align 6
