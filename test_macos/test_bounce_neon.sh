@@ -1,6 +1,5 @@
 #!/bin/bash
 BUILD=..
-COMMON=../test_common
 
 make -C ${BUILD} all
 
@@ -29,15 +28,11 @@ if [[ ! -z ${PID_KITTY} ]] ; then
 	sudo renice -n -20 -p ${PID_KITTY}
 fi
 
-# Hide term cursor before loading RELs; suppress reports to
-# stdout; restore term cursor upon termination
+# Hide term cursor before loading REL; restore term cursor
+# upon termination
 
 tput civis
-${DENICE} ${BUILD}/elvenrel ${COMMON}/test_bounce_data_aosoa_alt_0.o test_bounce_neon_aosoa.o --quiet
-${DENICE} ${BUILD}/elvenrel ${COMMON}/test_bounce_data_aosoa_alt_1.o test_bounce_neon_aosoa.o --quiet
-${DENICE} ${BUILD}/elvenrel ${COMMON}/test_bounce_data_aosoa_alt_2.o test_bounce_neon_aosoa.o --quiet
-${DENICE} ${BUILD}/elvenrel ${COMMON}/test_bounce_data_aosoa_alt_3.o test_bounce_neon_aosoa.o --quiet
-${DENICE} ${BUILD}/elvenrel ${COMMON}/test_bounce_data_aosoa_alt_2.o test_bounce_neon_aosoa_bg.o --quiet
+${DENICE} ${BUILD}/elvenrel test_bounce_neon.o
 tput cnorm
 
 # De-boost kitty to normal warp

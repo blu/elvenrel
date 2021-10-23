@@ -35,15 +35,17 @@ advance_timeval_us:
 	subs	w2, w4, w2
 	blo	.Lupdate_only_us
 	add	x3, x3, 1
-	stp	x3, x2, [x0]
+	str	x3, [x0]
+	str	w2, [x0, 8]
 	ret
 .Lupdate_only_us:
 	add	w4, w4, w1
-	str	x4, [x0, 8]
+	str	w4, [x0, 8]
 	ret
 
 _start:
 	adrf	x17, timeval
+	adrf	x18, msg
 
 	mov	x16, SYS_gettimeofday
 	mov	x2, xzr
@@ -51,44 +53,13 @@ _start:
 	mov	x0, x17
 	svc	0
 
-	// itoa timeval::tv_sec
-	ldr	x1, [x17]
-	adrf	x0, msg
-	bl	string_x64
-
-	// itoa timeval::tv_usec
-	ldr	x1, [x17, 8]
-	adrf	x0, msg + 17
-	bl	string_x64
-
-	// output current time
-	mov	x16, SYS_write
-	mov	x2, msg_len
-	adrf	x1, msg
-	mov	x0, STDOUT_FILENO
-	svc	0
+	ldr	q0, [x17]
+	str	q0, [x17, 16]
 
 	// advance time by DTIME us
 	mov	w1, DTIME
-	mov	x0, x17
+	add	x0, x17, 16
 	bl	advance_timeval_us
-
-	// itoa timeval::tv_sec
-	ldr	x1, [x17]
-	adrf	x0, msg
-	bl	string_x64
-
-	// itoa timeval::tv_usec
-	ldr	x1, [x17, 8]
-	adrf	x0, msg + 17
-	bl	string_x64
-
-	// output new time
-	mov	x16, SYS_write
-	mov	x2, msg_len
-	adrf	x1, msg
-	mov	x0, STDOUT_FILENO
-	svc	0
 
 	// xnu has no nano/usleep -- use select with empty fd sets
 	mov	x16, SYS_select
@@ -102,23 +73,40 @@ _start:
 	mov	x16, SYS_gettimeofday
 	mov	x2, xzr
 	mov	x1, xzr
-	mov	x0, x17
+	add	x0, x17, 32
 	svc	0
 
-	// itoa timeval::tv_sec
-	ldr	x1, [x17]
-	adrf	x0, msg
+	// itoa start time (timeval::tv_sec and timeval::tv_usec)
+	ldr	x1, [x17], 8
+	mov	x0, x18
 	bl	string_x64
 
-	// itoa timeval::tv_usec
-	ldr	x1, [x17, 8]
-	adrf	x0, msg + 17
+	ldr	w1, [x17], 8
+	add	x0, x18, 17
+	bl	string_x32
+
+	// itoa target time
+	ldr	x1, [x17], 8
+	add	x0, x18, 26
 	bl	string_x64
 
-	// output post-sleep time
+	ldr	w1, [x17], 8
+	add	x0, x18, 43
+	bl	string_x32
+
+	// itoa post-sleep time
+	ldr	x1, [x17], 8
+	add	x0, x18, 52
+	bl	string_x64
+
+	ldr	w1, [x17], 8
+	add	x0, x18, 69
+	bl	string_x32
+
+	// output start, target and post-sleep times
 	mov	x16, SYS_write
 	mov	x2, msg_len
-	adrf	x1, msg
+	mov	x1, x18
 	mov	x0, STDOUT_FILENO
 	svc	0
 
@@ -130,10 +118,15 @@ timeval_select:
 	.dword 0, DTIME
 
 	.section .bss
+	.align 4
 timeval:
+	.dword 0, 0
+	.dword 0, 0
 	.dword 0, 0
 
 	.section .data
 msg:
-	.ascii "################:################\n"
+	.ascii "################:########\n"
+	.ascii "################:########\n"
+	.ascii "################:########\n"
 msg_len = . - msg

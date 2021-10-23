@@ -364,7 +364,7 @@ fb_cursor_len = . - fb_cursor_cmd
 
 	.align 3
 timeval:
-	.dword 0, 13000
+	.dword 0, 12300
 
 	.section .bss
 	.align 6
