@@ -5,10 +5,15 @@ REL := test_text.o \
        test_bss.o \
        test_cross_0.o \
        test_cross_1.o \
+       test_timeval.o \
+       stringx.o \
        test_bounce.o \
        test_bounce_neon.o \
        test_bounce_neon_aosoa.o \
        test_bounce_neon_aosoa_bg.o
+
+stringx.o: ../stringx.s
+	$(AS) $(ASFLAGS) -o $@ $^
 
 test_bounce.o: test_bounce.s
 	$(AS) $(ASFLAGS) --defsym FB_DIM_X=$(shell tput cols) --defsym FB_DIM_Y=$(shell tput lines) --defsym FRAMES=1024 -o $@ $^

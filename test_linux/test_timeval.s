@@ -1,9 +1,9 @@
 	.global _start
 
-	.equ SYS_write, 4
-	.equ SYS_exit, 1
-	.equ SYS_select, 93
-	.equ SYS_gettimeofday, 116
+	.equ SYS_write, 64
+	.equ SYS_exit, 93
+	.equ SYS_nanosleep, 101
+	.equ SYS_gettimeofday, 169
 	.equ STDOUT_FILENO, 1
 .ifndef DTIME
 	.equ DTIME, 15500
@@ -35,33 +35,29 @@ advance_timeval_us:
 	subs	w2, w4, w2
 	blo	.Lupdate_only_us
 	add	x3, x3, 1
-	stp     x3, x2, [x0]
+	stp	x3, x2, [x0]
 	ret
 .Lupdate_only_us:
 	add	w4, w4, w1
-	str     x4, [x0, 8]
+	str	x4, [x0, 8]
 	ret
 
 _start:
 	adrf	x17, timeval
 	adrf	x18, msg
 
-	mov	x16, SYS_gettimeofday
+	mov	x8, SYS_gettimeofday
 	mov	x2, xzr
 	mov	x1, xzr
 	mov	x0, x17
 	svc	0
 
-	// xnu has no nano/usleep -- use select with empty fd sets
-	mov	x16, SYS_select
-	adr	x4, timeval_select
-	mov	x3, xzr
-	mov	x2, xzr
+	mov	x8, SYS_nanosleep
 	mov	x1, xzr
-	mov	x0, xzr
+	adr	x0, timespec_nanosleep
 	svc	0
 
-	mov	x16, SYS_gettimeofday
+	mov	x8, SYS_gettimeofday
 	mov	x2, xzr
 	mov	x1, xzr
 	add	x0, x17, 16
@@ -100,18 +96,18 @@ _start:
 	bl	string_x32
 
 	// output start, target and post-sleep times
-	mov	x16, SYS_write
+	mov	x8, SYS_write
 	mov	x2, msg_len
 	mov	x1, x18
 	mov	x0, STDOUT_FILENO
 	svc	0
 
-	mov	x16, SYS_exit
+	mov	x8, SYS_exit
 	mov	x0, xzr
 	svc	0
 
-timeval_select:
-	.dword 0, DTIME
+timespec_nanosleep:
+	.dword 0, DTIME * 1000
 
 	.section .bss
 	.align 4
