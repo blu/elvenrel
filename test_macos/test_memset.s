@@ -7,26 +7,23 @@
 	.equ COLUMNS, 64
 	.equ LINES, 48
 
-// load 'far' address as a +/-4GB offset from PC
-.macro adrf Xn, addr:req
-	adrp	\Xn, \addr
-	add	\Xn, \Xn, :lo12:\addr
-.endm
-
 _start:
-	adrf	x4, fb
+	adrp	x4, fb
+	add	x4, x4, :lo12:fb
 	add	x5, x4, (COLUMNS + 1) * LINES
 	mov	x6, 1
-once:
+loop:
 	movi	v0.16b, '.'
 	mov	x0, x4
 	mov	x1, x6
 	bl	memset
 
+	tst	x6, COLUMNS / (COLUMNS - LINES) - 1
 	add	x6, x6, 1
+	cinc	x4, x4, EQ
 	add	x4, x4, COLUMNS + 1
 	cmp	x4, x5
-	bne	once
+	blo	loop
 
 	mov	x16, SYS_write
 	mov	x2, fb_len
