@@ -10,7 +10,8 @@ endif
 REL := test_bounce_data_aosoa_alt_0.o \
        test_bounce_data_aosoa_alt_1.o \
        test_bounce_data_aosoa_alt_2.o \
-       test_bounce_data_aosoa_alt_3.o
+       test_bounce_data_aosoa_alt_3.o \
+       memset32.o
 
 test_bounce_data_aosoa_alt_3.o: test_bounce_data_aosoa_alt_3.s
 	$(AS) $(ASFLAGS) $(call defsym,FB_DIM_X,$(shell tput cols)) -o $@ $^

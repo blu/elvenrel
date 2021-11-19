@@ -1,5 +1,6 @@
 #!/bin/bash
 BUILD=..
+COMMON=../test_common
 
 make -C ${BUILD} all
 
@@ -32,7 +33,7 @@ fi
 # upon termination
 
 tput civis
-${DENICE} ${BUILD}/elvenrel test_bounce.o
+${DENICE} ${BUILD}/elvenrel ${COMMON}/memset32.o test_bounce.o
 tput cnorm
 
 # De-boost kitty to normal warp

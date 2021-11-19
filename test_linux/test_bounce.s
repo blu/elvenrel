@@ -30,24 +30,9 @@ _start:
 
 	// clear fb
 	movi	v0.16b, ' '
-	adrf	x1, fb
-	adrf	x2, fb_end
-	and	x4, x2, -32
-	and	x3, x2, -16
-.Lclear_fb:
-	cmp	x1, x4
-	beq	.Lclear_fb_tail_0
-	stp	q0, q0, [x1], 32
-	b	.Lclear_fb
-.Lclear_fb_tail_0:
-	cmp	x1, x3
-	beq	.Lclear_fb_tail_1
-	str	q0, [x1], 16
-.Lclear_fb_tail_1:
-	cmp	x1, x2
-	beq	.Lfb_done
-	str	b0, [x1], 1
-	b	.Lclear_fb_tail_1
+	adrf	x0, fb
+	adrf	x1, fb_end
+	bl	memset32
 
 .Lfb_done:
 	mov	w5, wzr // blip pos_x

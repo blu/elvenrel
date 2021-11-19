@@ -33,11 +33,11 @@ fi
 # stdout; restore term cursor upon termination
 
 tput civis
-${DENICE} ${BUILD}/elvenrel ${COMMON}/test_bounce_data_aosoa_alt_0.o test_bounce_neon_aosoa.o --quiet
-${DENICE} ${BUILD}/elvenrel ${COMMON}/test_bounce_data_aosoa_alt_1.o test_bounce_neon_aosoa.o --quiet
-${DENICE} ${BUILD}/elvenrel ${COMMON}/test_bounce_data_aosoa_alt_2.o test_bounce_neon_aosoa.o --quiet
-${DENICE} ${BUILD}/elvenrel ${COMMON}/test_bounce_data_aosoa_alt_3.o test_bounce_neon_aosoa.o --quiet
-${DENICE} ${BUILD}/elvenrel ${COMMON}/test_bounce_data_aosoa_alt_2.o test_bounce_neon_aosoa_bg.o --quiet
+${DENICE} ${BUILD}/elvenrel ${COMMON}/memset32.o ${COMMON}/test_bounce_data_aosoa_alt_0.o test_bounce_neon_aosoa.o    --quiet
+${DENICE} ${BUILD}/elvenrel ${COMMON}/memset32.o ${COMMON}/test_bounce_data_aosoa_alt_1.o test_bounce_neon_aosoa.o    --quiet
+${DENICE} ${BUILD}/elvenrel ${COMMON}/memset32.o ${COMMON}/test_bounce_data_aosoa_alt_2.o test_bounce_neon_aosoa.o    --quiet
+${DENICE} ${BUILD}/elvenrel ${COMMON}/memset32.o ${COMMON}/test_bounce_data_aosoa_alt_3.o test_bounce_neon_aosoa.o    --quiet
+${DENICE} ${BUILD}/elvenrel ${COMMON}/memset32.o ${COMMON}/test_bounce_data_aosoa_alt_2.o test_bounce_neon_aosoa_bg.o --quiet
 tput cnorm
 
 # De-boost kitty to normal warp

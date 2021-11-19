@@ -791,6 +791,8 @@ int main(int argc, char **argv)
 	if (areas.count && areas.arr != NULL)
 		vma_process(&areas, flag_quiet);
 
+	/* Don't try to free anything from heap here as there may not be a heap */
+
 #endif
 	if (start != NULL) {
 		if (flag_break) {
