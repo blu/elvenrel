@@ -13,7 +13,7 @@ _start:
 	add	x5, x4, (COLUMNS + 1) * LINES
 	mov	x6, 1
 	mov	x7, 1
-loop:
+.Lloop:
 	movi	v0.16b, '.'
 	mov	x0, x4
 	mov	x1, x6
@@ -26,7 +26,7 @@ loop:
 	cinc	x4, x4, EQ
 	add	x4, x4, COLUMNS + 1
 	cmp	x4, x5
-	blo	loop
+	blo	.Lloop
 
 	mov	x8, SYS_write
 	mov	x2, fb_len

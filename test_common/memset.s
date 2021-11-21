@@ -13,21 +13,21 @@
 memset32:
 	ands	x3, x1, -32
 	and	x2, x1, -16
-	beq	.Lclear_fb_tail_0
-.Lclear_fb:
+	beq	.Ltail0
+.Lloop32:
 	stp	q0, q0, [x0], 32
 	cmp	x0, x3
-	bne	.Lclear_fb
-.Lclear_fb_tail_0:
+	bne	.Lloop32
+.Ltail0:
 	cmp	x0, x2
-	beq	.Lclear_fb_tail_1
+	beq	.Ltail1
 	str	q0, [x0], 16
-.Lclear_fb_tail_1:
+.Ltail1:
 	cmp	x0, x1
-	beq	.Lfb_done
+	beq	.Ldone
 	str	b0, [x0], 1
-	b	.Lclear_fb_tail_1
-.Lfb_done:
+	b	.Ltail1
+.Ldone:
 	ret
 
 // memset a buffer to a given value
@@ -42,19 +42,19 @@ memset:
 	add	x3, x3, x0
 	add	x2, x2, x0
 	add	x1, x1, x0
-	beq	.LLclear_fb_tail_0
-.LLclear_fb:
+	beq	.LLtail0
+.LLloop32:
 	stp	q0, q0, [x0], 32
 	cmp	x0, x3
-	bne	.LLclear_fb
-.LLclear_fb_tail_0:
+	bne	.LLloop32
+.LLtail0:
 	cmp	x0, x2
-	beq	.LLclear_fb_tail_1
+	beq	.LLtail1
 	str	q0, [x0], 16
-.LLclear_fb_tail_1:
+.LLtail1:
 	cmp	x0, x1
-	beq	.LLfb_done
+	beq	.LLdone
 	str	b0, [x0], 1
-	b	.LLclear_fb_tail_1
-.LLfb_done:
+	b	.LLtail1
+.LLdone:
 	ret
