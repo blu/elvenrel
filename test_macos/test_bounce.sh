@@ -33,7 +33,7 @@ fi
 # upon termination
 
 tput civis
-${DENICE} ${BUILD}/elvenrel ${COMMON}/memset32.o test_bounce.o
+${DENICE} ${BUILD}/elvenrel ${COMMON}/memset.o test_bounce.o
 tput cnorm
 
 # De-boost kitty to normal warp

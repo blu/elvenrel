@@ -9,5 +9,5 @@ make -C ${BUILD} all
 # upon termination
 
 tput civis
-${BUILD}/elvenrel ${COMMON}/memset32.o test_bounce.o --filter /lib/aarch64-linux-gnu --filter [heap]
+${BUILD}/elvenrel ${COMMON}/memset.o test_bounce.o --filter /lib/aarch64-linux-gnu --filter [heap]
 tput cnorm
