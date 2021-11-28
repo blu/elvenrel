@@ -30,31 +30,38 @@ memset32:
 .Ldone:
 	ret
 
-// memset a buffer to a given value
+// memset a buffer to a given value; does unaligned writes
 // x0: buffer
 // x1: length
 // v0: byte value splatted to ASIMD width
-// clobbers: x2, x3
+// clobbers: x2
 	.align 4
 memset:
-	ands	x3, x1, -32
-	and	x2, x1, -16
-	add	x3, x3, x0
-	add	x2, x2, x0
-	add	x1, x1, x0
-	beq	.LLtail0
-.LLloop32:
+	lsr	x2, x1, 5
+	cbz	x2, .LLtail0
+.LLloop:
 	stp	q0, q0, [x0], 32
-	cmp	x0, x3
-	bne	.LLloop32
+	subs	x2, x2, 1
+	bne	.LLloop
 .LLtail0:
-	cmp	x0, x2
+	tst	x1, 16
 	beq	.LLtail1
 	str	q0, [x0], 16
 .LLtail1:
-	cmp	x0, x1
+	tst	x1, 8
+	beq	.LLtail2
+	str	d0, [x0], 8
+.LLtail2:
+	tst	x1, 4
+	beq	.LLtail3
+	str	s0, [x0], 4
+.LLtail3:
+	tst	x1, 2
+	beq	.LLtail4
+	str	h0, [x0], 2
+.LLtail4:
+	tst	x1, 1
 	beq	.LLdone
-	str	b0, [x0], 1
-	b	.LLtail1
+	str	b0, [x0]
 .LLdone:
 	ret
