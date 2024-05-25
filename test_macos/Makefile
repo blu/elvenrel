@@ -1,10 +1,10 @@
 # Differentiate between GAS and Apple clang
 AS_VENDOR := $(word 1, $(shell $(AS) --version))
 ifeq ($(AS_VENDOR), GNU)
-	ASFLAGS += --strip-local-absolute
+	ASFLAGS += --strip-local-absolute -I..
 	defsym = --defsym $(1)=$(2)
 else
-	ASFLAGS += --target=aarch64-linux-gnu
+	ASFLAGS += --target=aarch64-linux-gnu -I..
 	defsym = -Wa,-defsym,$(1)=$(2)
 endif
 REL := test_text.o \

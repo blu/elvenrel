@@ -25,11 +25,7 @@
 	.equ GRID_STEP_Y_2, 0
 	.equ GRID_STEP_Y_3, 1
 
-// load 'far' address as a +/-4GB offset from PC
-.macro adrf Xn, addr:req
-	adrp	\Xn, \addr
-	add	\Xn, \Xn, :lo12:\addr
-.endm
+	.include "macro.inc"
 
 	.text
 _start:

@@ -12,12 +12,7 @@
 .else
 	// symbols supplied by CLI
 .endif
-
-// load 'far' address as a +/-4GB offset from PC
-.macro adrf Xn, addr:req
-	adrp	\Xn, \addr
-	add	\Xn, \Xn, :lo12:\addr
-.endm
+	.include "macro.inc"
 
 	.text
 _start:

@@ -9,17 +9,7 @@
 	.equ DTIME, 15500
 .endif
 
-// load 'far' address as a +/-4GB offset from PC
-.macro adrf Xn, addr:req
-	adrp	\Xn, \addr
-	add	\Xn, \Xn, :lo12:\addr
-.endm
-
-// load a 32-bit immediate
-.macro movl Wn, imm:req
-	movz	\Wn, (\imm) & 0Xffff
-	movk	\Wn, ((\imm) >> 16) & 0Xffff, lsl 16
-.endm
+	.include "macro.inc"
 
 	.text
 

@@ -1,4 +1,4 @@
-ASFLAGS += --strip-local-absolute
+ASFLAGS += --strip-local-absolute -I..
 REL := test_text.o \
        test_rodata.o \
        test_data.o \
