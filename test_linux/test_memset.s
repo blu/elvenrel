@@ -7,9 +7,9 @@
 	.equ COLUMNS, 64
 	.equ LINES, 48
 
+	.include "macro.inc"
 _start:
-	adrp	x4, fb
-	add	x4, x4, :lo12:fb
+	adrf	x4, fb
 	add	x5, x4, (COLUMNS + 1) * LINES
 	mov	x6, 1
 	mov	x7, 1
