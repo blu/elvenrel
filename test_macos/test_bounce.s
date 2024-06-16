@@ -5,6 +5,7 @@
 	.equ SYS_select, 93
 	.equ STDOUT_FILENO, 1
 
+	.equ COORD_FRAC, 16
 .if 0
 	.equ FB_DIM_X, 203
 	.equ FB_DIM_Y, 48
@@ -33,8 +34,10 @@ _start:
 	mov	w5, wzr // blip pos_x
 	mov	w6, wzr // blip pos_y
 	mov	x7, FRAMES
-	mov	w10, 1 // blip step_x
-	mov	w11, 1 // blip step_y
+	mov	w9, (FB_DIM_X - 2) << COORD_FRAC // max bound_x
+	mov	w10, (FB_DIM_Y - 1) << COORD_FRAC // max bound_y
+	mov	w11, 0x1 << (COORD_FRAC - 0) // blip step_x
+	mov	w12, 0x8 << (COORD_FRAC - 4) // blip step_y
 .Lframe:
 	// reset cursor; x16 = SYS_write
 	mov	x2, fb_cursor_len
@@ -47,23 +50,25 @@ _start:
 	adrf	x1, fb
 
 	// plot blip in fb
+	asr	w13, w5, COORD_FRAC
+	asr	w14, w6, COORD_FRAC
 	mov	w3, 0x5d5b
 	mov	w4, FB_DIM_X
-	madd	w4, w4, w6, w5
+	madd	w4, w4, w14, w13
 	strh	w3, [x1, x4]
 
 	// update position
-	add	w5, w5, w10
-	add	w6, w6, w11
+	add	w5, w5, w11
+	add	w6, w6, w12
 
 	// check bounds & update step accordingly
-	cmp	w5, FB_DIM_X - 2
+	cmp	w5, w9
 	ccmp	w5, 0, 4, NE
-	cneg	w10, w10, EQ
-
-	cmp	w6, FB_DIM_Y - 1
-	ccmp	w6, 0, 4, NE
 	cneg	w11, w11, EQ
+
+	cmp	w6, w10
+	ccmp	w6, 0, 4, NE
+	cneg	w12, w12, EQ
 
 	// output fb; x16 = SYS_write
 	mov	x0, STDOUT_FILENO
@@ -101,7 +106,7 @@ fb_cursor_len = . - fb_cursor_cmd
 
 	.align 3
 timeval:
-	.dword 0, 12300
+	.dword 0, 15500
 
 	.section .bss
 	.align 6
