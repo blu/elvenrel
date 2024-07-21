@@ -52,6 +52,12 @@ _start:
 	// plot blip in fb
 	asr	w13, w5, COORD_FRAC
 	asr	w14, w6, COORD_FRAC
+	// round fractional coords to +inf
+	ubfx	w17, w5, (COORD_FRAC - 1), #1
+	ubfx	w18, w6, (COORD_FRAC - 1), #1
+	add	w13, w13, w17
+	add	w14, w14, w18
+
 	mov	w3, 0x5d5b
 	mov	w4, FB_DIM_X
 	madd	w4, w4, w14, w13
