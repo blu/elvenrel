@@ -12,9 +12,10 @@
 .else
 	// symbols supplied by CLI
 .endif
-	.equ GRID_DISTANCE_X, 16
+	.equ GRID_DISTANCE_X, 8
 	.equ GRID_DISTANCE_Y, 8
 
+.if 0
 	.equ GRID_STEP_X_0, 1
 	.equ GRID_STEP_X_1, 0
 	.equ GRID_STEP_X_2, 1
@@ -24,6 +25,17 @@
 	.equ GRID_STEP_Y_1, 1
 	.equ GRID_STEP_Y_2, 0
 	.equ GRID_STEP_Y_3, 1
+.else
+	.equ GRID_STEP_X_0, 1
+	.equ GRID_STEP_X_1, 1
+	.equ GRID_STEP_X_2, 1
+	.equ GRID_STEP_X_3, 1
+
+	.equ GRID_STEP_Y_0, 0
+	.equ GRID_STEP_Y_1, 0
+	.equ GRID_STEP_Y_2, 0
+	.equ GRID_STEP_Y_3, 0
+.endif
 
 	.include "macro.inc"
 
@@ -54,6 +66,7 @@ _start:
 	ldr	q3, grid_pos_0123
 	ldr	q7, grid_step_0123
 	ldr	q8, grid_step_0123 + 16
+	ldr	q11, =0x10000000200000003
 
 	adr	x10, grid_pos_xxx0
 	adr	x11, grid_pos_1234
@@ -69,13 +82,13 @@ _start:
 	addv	s1, v2.4s
 	fmov	w0, s1
 	dup	v0.4s, w9
+	add	v0.4s, v0.4s, v11.4s
 	cbz	w0, .Lgen_grid_next
 
 	// produce a transitional end-of-one/start-of-another
 	// pack inbetween subsequent lines
 	mvn	w1, w0
-	add	x2, x10, x1, LSL 4
-	ldr	q1, [x2]
+	ldr	q1, [x10, x1, LSL 4]
 	bic	v3.16b, v3.16b, v2.16b
 	orr	v3.16b, v3.16b, v1.16b
 
@@ -87,6 +100,7 @@ _start:
 	orr	v8.16b, v8.16b, v10.16b
 
 	dup	v0.4s, w9
+	mov	v12.16b, v11.16b
 	add	w9, w9, GRID_DISTANCE_Y
 	// clamp pos_y at bottom-of-fb; affects only padding particles
 	cmp	w9, w6
@@ -94,12 +108,14 @@ _start:
 	mov	w9, FB_DIM_Y - 1
 	bic	v7.16b, v7.16b, v2.16b
 	bic	v8.16b, v8.16b, v2.16b
+	bic	v12.16b, v12.16b, v2.16b
 .Lgen_grid_pos_y:
 	dup	v1.4s, w9
 
 	bic	v0.16b, v0.16b, v2.16b
 	and	v1.16b, v1.16b, v2.16b
 	orr	v0.16b, v0.16b, v1.16b
+	add	v0.4s, v0.4s, v12.4s
 
 	// if the fist pack is entirely from the new line
 	// then move over to that
@@ -115,9 +131,9 @@ _start:
 	beq	.Lgen_grid_done
 
 	// prepare next pack entirely from the new line
-	add	x2, x11, x1, LSL 4
-	ldr	q3, [x2]
+	ldr	q3, [x11, x1, LSL 4]
 	dup	v0.4s, w9
+	add	v0.4s, v0.4s, v11.4s
 
 	add	x2, x13, x1, LSL 5
 	ldp	q7, q8, [x2]
@@ -138,6 +154,8 @@ _start:
 .Lgen_grid_done:
 	mov	x16, SYS_write
 	mov	x9, FRAMES
+	movi	v11.4s, 1
+	add	v11.4s, v11.4s, v5.4s
 .Lframe:
 	// reset cursor; x16 = SYS_write
 	mov	x2, fb_cursor_len
@@ -179,7 +197,7 @@ _start:
 	add	v1.4s, v1.4s, v3.4s
 
 	// check bounds & update steps accordingly
-	cmeq	v7.4s, v0.4s, v5.4s
+	cmeq	v7.4s, v0.4s, v11.4s
 	cmeq	v8.4s, v0.4s, 0
 	cmeq	v9.4s, v1.4s, v6.4s
 	cmeq	v10.4s, v1.4s, 0
@@ -299,11 +317,11 @@ _start:
 
 	.align 4
 grid_pos_xxx0:
-	.word   0,                   0,                   0,                   GRID_DISTANCE_X * 0
+	.word	0,                   0,                   0,                   GRID_DISTANCE_X * 0
 grid_pos_xx01:
-	.word   0,                   0,                   GRID_DISTANCE_X * 0, GRID_DISTANCE_X * 1
+	.word	0,                   0,                   GRID_DISTANCE_X * 0, GRID_DISTANCE_X * 1
 grid_pos_x012:
-	.word   0,                   GRID_DISTANCE_X * 0, GRID_DISTANCE_X * 1, GRID_DISTANCE_X * 2
+	.word	0,                   GRID_DISTANCE_X * 0, GRID_DISTANCE_X * 1, GRID_DISTANCE_X * 2
 grid_pos_0123:
 	.word	GRID_DISTANCE_X * 0, GRID_DISTANCE_X * 1, GRID_DISTANCE_X * 2, GRID_DISTANCE_X * 3
 grid_pos_1234:
