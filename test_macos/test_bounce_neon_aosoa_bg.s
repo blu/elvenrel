@@ -374,7 +374,7 @@ fb_len = . - fb
 
 	.align 6
 grid:
-	.fill (((FB_DIM_X + GRID_DISTANCE_X - 2) / GRID_DISTANCE_X) * ((FB_DIM_Y + GRID_DISTANCE_Y - 2) / GRID_DISTANCE_Y) + 3) / 4 * 64
+	.fill (((FB_DIM_X + GRID_DISTANCE_X - 2) / GRID_DISTANCE_X) * ((FB_DIM_Y + GRID_DISTANCE_Y - 2 - 3) / GRID_DISTANCE_Y) + 3) / 4 * 64
 grid_end:
 	.fill (grid_end - grid) / 16, 4
 grid_erase_end:
