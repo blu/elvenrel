@@ -8,7 +8,6 @@
 .ifndef DTIME
 	.equ DTIME, 15500
 .endif
-
 	.include "macro.inc"
 
 	.text
@@ -34,7 +33,7 @@ advance_timeval_us:
 
 _start:
 	adrf	x17, timeval
-	adrf	x18, msg
+	adrf	x19, msg
 
 	mov	x16, SYS_gettimeofday
 	mov	x2, xzr
@@ -59,11 +58,11 @@ _start:
 
 	// itoa start time (timeval::tv_sec and timeval::tv_usec)
 	ldr	x1, [x17]
-	mov	x0, x18
+	mov	x0, x19
 	bl	string_x64
 
 	ldr	w1, [x17, 8]
-	add	x0, x18, 17
+	add	x0, x19, 17
 	bl	string_x32
 
 	// advance start time by DTIME us
@@ -73,26 +72,26 @@ _start:
 
 	// itoa target time
 	ldr	x1, [x17]
-	add	x0, x18, 26
+	add	x0, x19, 26
 	bl	string_x64
 
 	ldr	w1, [x17, 8]
-	add	x0, x18, 43
+	add	x0, x19, 43
 	bl	string_x32
 
 	// itoa post-sleep time
 	ldr	x1, [x17, 16]
-	add	x0, x18, 52
+	add	x0, x19, 52
 	bl	string_x64
 
 	ldr	w1, [x17, 24]
-	add	x0, x18, 69
+	add	x0, x19, 69
 	bl	string_x32
 
 	// output start, target and post-sleep times
 	mov	x16, SYS_write
 	mov	x2, msg_len
-	mov	x1, x18
+	mov	x1, x19
 	mov	x0, STDOUT_FILENO
 	svc	0
 

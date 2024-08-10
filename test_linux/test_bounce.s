@@ -54,9 +54,9 @@ _start:
 	asr	w14, w6, COORD_FRAC
 	// round fractional coords to +inf
 	ubfx	w17, w5, (COORD_FRAC - 1), #1
-	ubfx	w18, w6, (COORD_FRAC - 1), #1
+	ubfx	w19, w6, (COORD_FRAC - 1), #1
 	add	w13, w13, w17
-	add	w14, w14, w18
+	add	w14, w14, w19
 
 	mov	w3, 0x5d5b
 	mov	w4, FB_DIM_X
