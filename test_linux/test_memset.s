@@ -30,7 +30,7 @@ _start:
 
 	mov	x8, SYS_write
 	mov	x2, fb_len
-	adr	x1, fb
+	adrf	x1, fb
 	mov	x0, STDOUT_FILENO
 	svc	0
 
