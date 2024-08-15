@@ -268,8 +268,9 @@ static int
 }
 
 enum {
-	REL_CAPS_RW_SECTIONS = 1U, /* REL has RW SHT_PROGBITS sections */
-	REL_CAPS_RO_SECTIONS = 2U  /* REL has RO SHT_PROGBITS sections */
+	REL_CAPS_RW_SECTIONS = 1U, /* REL has read-Write SHT_PROGBITS sections */
+	REL_CAPS_RO_SECTIONS = 2U, /* REL has read-only SHT_PROGBITS sections */
+	REL_CAPS_RX_SECTIONS = 4U  /* REL has read-exec SHT_PROGBITS sections */
 };
 
 /* Load ELF file section and symbol tables; relocate sections and symbols based on loading/mapping VA
@@ -476,15 +477,16 @@ static int
 				}
 
 				shdr64->sh_addr = (Elf64_Addr)p;
+			} else if (scn_idx == text_idx) {
+				shdr64->sh_addr = (Elf64_Addr)(rawdata_ro + shdr64->sh_offset);
+				caps |= REL_CAPS_RX_SECTIONS;
+			} else if (scn_idx == rodata_idx) {
+				shdr64->sh_addr = (Elf64_Addr)(rawdata_ro + shdr64->sh_offset);
+				caps |= REL_CAPS_RO_SECTIONS;
 			} else {
-				if (scn_idx == text_idx || scn_idx == rodata_idx) {
-					shdr64->sh_addr = (Elf64_Addr)(rawdata_ro + shdr64->sh_offset);
-					caps |= REL_CAPS_RO_SECTIONS;
-				} else {
-					shdr64->sh_addr = (Elf64_Addr)(rawdata_rw + shdr64->sh_offset);
-					if (shdr64->sh_type == SHT_PROGBITS) {
-						caps |= REL_CAPS_RW_SECTIONS;
-					}
+				shdr64->sh_addr = (Elf64_Addr)(rawdata_rw + shdr64->sh_offset);
+				if (shdr64->sh_type == SHT_PROGBITS) {
+					caps |= REL_CAPS_RW_SECTIONS;
 				}
 			}
 		}
@@ -756,8 +758,13 @@ int main(int argc, char **argv)
 		}
 
 		/* Finalize RO mapping depending on presence of RO SHT_PROGBITS */
-		if (caps & REL_CAPS_RO_SECTIONS) {
+		if (caps & REL_CAPS_RX_SECTIONS) {
 			if (mprotect(q, sb.st_size, PROT_READ | PROT_EXEC)) {
+				fprintf(stderr, "error: cannot mprotect\n");
+				return -1;
+			}
+		} else if (caps & REL_CAPS_RO_SECTIONS) {
+			if (mprotect(q, sb.st_size, PROT_READ)) {
 				fprintf(stderr, "error: cannot mprotect\n");
 				return -1;
 			}
