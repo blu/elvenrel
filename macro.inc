@@ -1,11 +1,14 @@
 // load 'far' address as a +/-4GB offset from PC
-.macro adrf Xn, addr:req
+.macro adrf Xn:req, addr:req
 	adrp	\Xn, \addr
 	add	\Xn, \Xn, :lo12:\addr
 .endm
 
 // load a 32-bit immediate
-.macro movl Wn, imm:req
+.macro movl Wn:req, imm:req
+	.if (\imm) > 0xffffffff
+	.error "Immediate out of range"
+	.endif
 	.if (\imm) & 0xffff
 	movz	\Wn, (\imm) & 0xffff
 	.if (\imm) & (0xffff << 16)
@@ -18,7 +21,7 @@
 	.endif
 .endm
 
-.macro __tail_movq Xn, imm:req
+.macro __tail_movq Xn:req, imm:req
 	.irp iter,1,2,3
 	.if (\imm) & (0xffff << (\iter * 16))
 	movk	\Xn, ((\imm) >> (\iter * 16)) & 0xffff, lsl \iter * 16
@@ -27,7 +30,7 @@
 .endm
 
 // load a 64-bit immediate
-.macro movq Xn, imm:req
+.macro movq Xn:req, imm:req
 	.if (\imm) & 0xffff
 	movz	\Xn, (\imm) & 0xffff
 	__tail_movq \Xn, "((\imm) & ~0xffff)"
