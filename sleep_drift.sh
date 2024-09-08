@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 
 UNAME=`uname`
 
@@ -8,10 +8,7 @@ else
 	HOSTDIR=test_macos
 fi
 
-# timeval::tv_usec at target-wake-up and actual-wake-up times, in microseconds, in times[0] and times[1], respectively
-times=(`./elvenrel ${HOSTDIR}/stringx.o ${HOSTDIR}/test_timeval.o --quiet | tail -n 2 | sed -E 's/^[^:]+://'`)
+# timeval::tv_sec and timeval::tv_usec at target-wake-up and actual-wake-up times, in times[0..3], respectively
+times=(`./elvenrel ${HOSTDIR}/stringx.o ${HOSTDIR}/test_timeval.o --quiet | tail -n 2 | awk -F ':' '{ print toupper($1), toupper($2) }'`)
 # bc accepts only upper case
-times[0]=`echo ${times[0]} | awk '{ print toupper($0) }'`
-times[1]=`echo ${times[1]} | awk '{ print toupper($0) }'`
-# actual wake-up time (times[1]) may be in the next second past the target wake-up time (times[0])
-echo "ibase=16; (${times[1]} < ${times[0]}) * F4240 + ${times[1]} - ${times[0]}" | bc
+echo "ibase=16; (${times[2]} - ${times[0]}) * F4240 + ${times[3]} - ${times[1]}" | bc
