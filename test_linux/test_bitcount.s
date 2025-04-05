@@ -4,7 +4,8 @@
 	.equ SYS_exit, 93
 	.equ STDOUT_FILENO, 1
 
-	.equ sample_bitset_num_u32, 128 * 16
+	.equ sample_bitset_num_u32, 1000 * 1000
+
 	.include "macro.inc"
 
 	.text
@@ -19,13 +20,14 @@ _start:
 	/* block tested { */
 	movl	x1, sample_bitset_num_u32
 	adrf	x0, sample_bitset_u32
-	and	x7, x1, 0xfffffff0
+	ands	x7, x1, 0xfffffff0
 	add	x8, x0, 32
 	movi	v0.2d, 0
 	movi	v1.2d, 0
 	movi	v2.2d, 0
 	movi	v3.2d, 0
-.Lbulk:
+	b.eq	.Lbulk8
+.Lbulk16:
 	ldp	q4, q5, [x8, -32]
 	ldp	q6, q7, [x8], 64
 	cnt	v4.16b, v4.16b
@@ -43,8 +45,45 @@ _start:
 	uadalp	v2.4s, v6.8h
 	uadalp	v3.4s, v7.8h
 	subs	x7, x7, 16
-	b.ne	.Lbulk
+	b.ne	.Lbulk16
+.Lbulk8:
+	tst	x1, 0x8
+	sub	x8, x8, 32
+	b.eq	.Lbulk4
+	ldp	q4, q5, [x8], 32
+	cnt	v4.16b, v4.16b
+	cnt	v5.16b, v5.16b
 
+	uaddlp	v4.8h, v4.16b
+	uaddlp	v5.8h, v5.16b
+
+	uadalp	v0.4s, v4.8h
+	uadalp	v1.4s, v5.8h
+.Lbulk4:
+	tst	x1, 0x4
+	b.eq	.Lbulk2
+	ldr	q6, [x8], 16
+	cnt	v6.16b, v6.16b
+
+	uaddlp	v6.8h, v6.16b
+	uadalp	v2.4s, v6.8h
+.Lbulk2:
+	tst	x1, 0x2
+	b.eq	.Lunit
+	ldr	d7, [x8], 8
+	cnt	v7.8b, v7.8b
+
+	uaddlp	v7.4h, v7.8b
+	uadalp	v3.4s, v7.8h /* implicit widening to match acc width */
+.Lunit:
+	tst	x1, 0x1
+	b.eq	.Lfinal
+	ldr	s4, [x8]
+	cnt	v4.8b, v4.8b
+
+	uaddlp	v4.4h, v4.8b
+	uadalp	v0.4s, v4.8h /* implicit widening to match acc width */
+.Lfinal:
 	add	v0.4s, v1.4s, v0.4s
 	add	v1.4s, v3.4s, v2.4s
 	add	v0.4s, v1.4s, v0.4s
