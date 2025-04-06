@@ -26,8 +26,8 @@ _start:
 	// clear fb
 	movi	v0.16b, ' '
 	adrf	x0, fb
-	adrf	x1, fb_end
-	bl	memset32
+	ldr	w1, =fb_len
+	bl	memset
 
 .Lfb_done:
 	// four Q-form regs hold SoA { pos_x, pos_y, step_x, step_y }
@@ -52,7 +52,7 @@ _start:
 	svc	0
 
 	// access to fb: addr & len as per SYS_write
-	ldr	x2, =fb_len
+	ldr	w2, =fb_len
 	adrf	x1, fb
 
 	// plot blips in fb
@@ -126,5 +126,4 @@ timespec:
 	.align 6
 fb:
 	.fill FB_DIM_Y * FB_DIM_X
-fb_end:
 fb_len = . - fb

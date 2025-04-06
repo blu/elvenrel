@@ -27,8 +27,8 @@ _start:
 	// clear fb
 	movi	v0.16b, ' '
 	adrf	x0, fb
-	adrf	x1, fb_end
-	bl	memset32
+	ldr	w1, =fb_len
+	bl	memset
 
 .Lfb_done:
 	mov	w5, wzr // blip pos_x
@@ -118,5 +118,4 @@ timeval:
 	.align 6
 fb:
 	.fill FB_DIM_Y * FB_DIM_X
-fb_end:
 fb_len = . - fb
