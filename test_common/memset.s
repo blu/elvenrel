@@ -44,24 +44,19 @@ memset:
 	subs	x2, x2, 1
 	bne	.LLloop
 .LLtail0:
-	tst	x1, 16
-	beq	.LLtail1
+	tbz	x1, 4, .LLtail1
 	str	q0, [x0], 16
 .LLtail1:
-	tst	x1, 8
-	beq	.LLtail2
+	tbz	x1, 3, .LLtail2
 	str	d0, [x0], 8
 .LLtail2:
-	tst	x1, 4
-	beq	.LLtail3
+	tbz	x1, 2, .LLtail3
 	str	s0, [x0], 4
 .LLtail3:
-	tst	x1, 2
-	beq	.LLtail4
+	tbz	x1, 1, .LLtail4
 	str	h0, [x0], 2
 .LLtail4:
-	tst	x1, 1
-	beq	.LLdone
+	tbz	x1, 0, .LLdone
 	str	b0, [x0]
 .LLdone:
 	ret
