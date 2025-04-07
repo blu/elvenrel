@@ -4,7 +4,7 @@
 	.equ SYS_exit, 1
 	.equ STDOUT_FILENO, 1
 
-	.equ sample_bitset_num_u32, 10 * 1000 * 1000
+	.equ sample_bitset_num_u32, 100 * 1000 * 1000
 
 	.include "macro.inc"
 
@@ -93,18 +93,20 @@ _start:
 	sub	x0, x0, x1
 	stp	x2, x0, [sp]
 
+	ldr	x2, =string_x64
 	ldr	x1, [sp, 16]
 	adrf	x0, msg01_arg0
-	bl	string_x64
+	blr	x2 /* string_x64 far call */
 
 	ldr	x1, [sp, 8]
 	adrf	x0, msg01_arg1
-	bl	string_x64
+	blr	x2 /* string_x64 far call */
 
 	/* fill in result message */
+	ldr	x2, =string_x32
 	ldr	w1, [sp]
 	adrf	x0, msg02_arg0
-	bl	string_x32
+	blr	x2 /* string_x32 far call */
 
 	/* dealloc local room */
 	add	sp, sp, 32
