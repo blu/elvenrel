@@ -20,7 +20,7 @@ _start:
 	/* block tested { */
 	adrf	x0, sample_bitset_u32
 	movl	x1, sample_bitset_num_u32
-	ands	x2, x1, 0xfffffff0
+	ands	x2, x1, -16
 	add	x3, x0, 32
 	movi	v0.2d, 0
 	movi	v1.2d, 0
