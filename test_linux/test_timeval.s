@@ -1,3 +1,5 @@
+	.arch armv8-a
+
 	.global _start
 
 	.equ SYS_write, 64
@@ -7,30 +9,12 @@
 	.equ STDOUT_FILENO, 1
 .ifndef DTIME
 	.equ DTIME, 15500
+.elseif DTIME >= 1000000
+	.error "DTIME greater-or-equal to 1e6"
 .endif
 	.include "macro.inc"
 
 	.text
-
-// advance timeval by a non-negative dtime in us
-// x0: timeval ptr
-// w1: dtime us; must be less than 1e6
-// clobbers: x2, x3, x4
-	.align 4
-advance_timeval_us:
-	movl	w2, 1000000
-	sub	w2, w2, w1
-	ldp	x3, x4, [x0]
-	subs	w2, w4, w2
-	blo	.Lupdate_only_us
-	add	x3, x3, 1
-	stp	x3, x2, [x0]
-	ret
-.Lupdate_only_us:
-	add	w4, w4, w1
-	str	x4, [x0, 8]
-	ret
-
 _start:
 	adrf	x17, timeval
 	adrf	x19, msg
@@ -62,7 +46,7 @@ _start:
 	bl	string_x32
 
 	// advance start time by DTIME us
-	mov	w1, DTIME
+	movl	w1, DTIME
 	mov	x0, x17
 	bl	advance_timeval_us
 
