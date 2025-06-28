@@ -19,7 +19,8 @@ REL := test_text.o \
        test_bounce_neon.o \
        test_bounce_neon_aosoa.o \
        test_bounce_neon_aosoa_bg.o \
-       test_memset.o
+       test_memset.o \
+       test_memset_woa.o
 
 stringx.o: ../stringx.s
 	$(AS) $(ASFLAGS) -o $@ $^

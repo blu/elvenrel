@@ -2,7 +2,7 @@
 BUILD=..
 COMMON=../test_common
 
-make -C ${BUILD} all
+make -C ${BUILD} all > /dev/null
 
 # Hide term cursor before loading REL; nuke all VMAs from common libraries and
 # the process heap VMA, before passing control to _start; restore term cursor

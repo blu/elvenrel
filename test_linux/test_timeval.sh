@@ -1,7 +1,7 @@
 #!/bin/bash
 BUILD=..
 
-make -C ${BUILD} all
+make -C ${BUILD} all > /dev/null
 
 # Advance a timeval structure by some us
 

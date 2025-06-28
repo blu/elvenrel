@@ -1,7 +1,7 @@
 #!/bin/bash
 BUILD=..
 
-make -C ${BUILD} all
+make -C ${BUILD} all > /dev/null
 
 # Load two RELs with cross-relocations; nuke all VMAs from common libraries and
 # the process heap VMA, before passing control to _start

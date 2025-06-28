@@ -2,7 +2,7 @@
 BUILD=..
 COMMON=../test_common
 
-make -C ${BUILD} all
+make -C ${BUILD} all > /dev/null
 
 # De-nice ourselves and our kitty term emu for smooth fps; some root required
 
