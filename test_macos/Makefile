@@ -15,6 +15,7 @@ REL := test_text.o \
        test_cross_1.o \
        test_timeval.o \
        stringx.o \
+       timeval.o \
        test_bounce.o \
        test_bounce_neon.o \
        test_bounce_neon_aosoa.o \
@@ -23,6 +24,9 @@ REL := test_text.o \
        test_memset_woa.o
 
 stringx.o: ../stringx.s
+	$(AS) $(ASFLAGS) -o $@ $^
+
+timeval.o: ../test_common/timeval.s
 	$(AS) $(ASFLAGS) -o $@ $^
 
 test_bounce.o: test_bounce.s
