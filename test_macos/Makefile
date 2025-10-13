@@ -11,11 +11,12 @@ REL := test_text.o \
        test_rodata.o \
        test_data.o \
        test_bss.o \
-       test_cross_0.o \
-       test_cross_1.o \
-       test_timeval.o \
+       test_order.o \
        stringx.o \
+       msg_a.o \
+       msg_b.o \
        timeval.o \
+       test_timeval.o \
        test_bounce.o \
        test_bounce_neon.o \
        test_bounce_neon_aosoa.o \
@@ -24,6 +25,12 @@ REL := test_text.o \
        test_memset_woa.o
 
 stringx.o: ../stringx.s
+	$(AS) $(ASFLAGS) -o $@ $^
+
+msg_a.o: ../test_common/msg_a.s
+	$(AS) $(ASFLAGS) -o $@ $^
+
+msg_b.o: ../test_common/msg_b.s
 	$(AS) $(ASFLAGS) -o $@ $^
 
 timeval.o: ../test_common/timeval.s

@@ -9,7 +9,7 @@
 	.text
 _start:
 	mov	x8, SYS_write
-	adrf	x1, buf
+	adrf	x1, msg
 	ldrb	w2, [x1, -1]
 	mov	x0, STDOUT_FILENO
 	svc	0
