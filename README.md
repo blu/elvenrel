@@ -78,6 +78,16 @@ Using `--break` raises a `SIGTRAP` right before passing control to REL for quick
 (lldb) register write pc `$pc + 4`
 ```
 
+## Tips
+
+For optimal performance of the timing-sensitive tty tests in this project, we advise for the use of well-optimised terminal emulators.
+
+Recommended terminal emulators:
+
+* Linux: kmscon
+* macOS: kitty
+* WSL: Windows Terminal Canary
+
 ## Screenshots
 
 ![hello_sample](image/screenshot000.png "hello sample")
