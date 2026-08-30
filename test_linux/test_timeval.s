@@ -5,7 +5,6 @@
 	.equ SYS_write, 64
 	.equ SYS_exit, 93
 	.equ SYS_nanosleep, 101
-	.equ SYS_gettimeofday, 169
 	.equ STDOUT_FILENO, 1
 .ifndef DTIME
 	.equ DTIME, 15500
@@ -16,25 +15,23 @@
 
 	.text
 _start:
-	adrf	x17, timeval
-	adrf	x19, msg
+	ldr	x17, =timeval
+	ldr	x19, =msg
 
-	mov	x8, SYS_gettimeofday
-	mov	x2, xzr
-	mov	x1, xzr
 	mov	x0, x17
-	svc	0
+	mrs	x1, cntfrq_el0
+	mrs	x2, cntvct_el0
+	bl	timeval_from_cntvct
 
 	mov	x8, SYS_nanosleep
 	mov	x1, xzr
 	adr	x0, timespec_nanosleep
 	svc	0
 
-	mov	x8, SYS_gettimeofday
-	mov	x2, xzr
-	mov	x1, xzr
 	add	x0, x17, 16
-	svc	0
+	mrs	x1, cntfrq_el0
+	mrs	x2, cntvct_el0
+	bl	timeval_from_cntvct
 
 	// itoa start time (timeval::tv_sec and timeval::tv_usec)
 	ldr	x1, [x17]

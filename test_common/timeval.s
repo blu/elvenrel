@@ -1,6 +1,7 @@
 	.arch armv8-a
 
 	.global advance_timeval_us
+	.global timeval_from_cntvct
 
 	.include "macro.inc"
 
@@ -49,3 +50,19 @@ advance_timeval_us:
 	ret
 
 .endif
+
+	.align 4
+// produce timeval from cntvct and cntfrq
+// a gettimeofday substitute in situations where only delta time matters
+// x0: timeval ptr
+// x1: cntfrq (Hz)
+// x2: cntvct
+// clobbers: x2, x3, x4
+timeval_from_cntvct:
+	movl	w4, 1000000
+	udiv	x3, x2, x1
+	msub	x2, x3, x1, x2
+	mul	x2, x2, x4
+	udiv	x2, x2, x1
+	stp 	x3, x2, [x0]
+	ret

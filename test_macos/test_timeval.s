@@ -5,7 +5,6 @@
 	.equ SYS_write, 4
 	.equ SYS_exit, 1
 	.equ SYS_select, 93
-	.equ SYS_gettimeofday, 116
 	.equ STDOUT_FILENO, 1
 .ifndef DTIME
 	.equ DTIME, 15500
@@ -16,14 +15,13 @@
 
 	.text
 _start:
-	adrf	x17, timeval
-	adrf	x19, msg
+	ldr	x17, =timeval
+	ldr	x19, =msg
 
-	mov	x16, SYS_gettimeofday
-	mov	x2, xzr
-	mov	x1, xzr
 	mov	x0, x17
-	svc	0
+	mrs	x1, cntfrq_el0
+	mrs	x2, cntvct_el0
+	bl	timeval_from_cntvct
 
 	// xnu has no nano/usleep -- use select with empty fd sets
 	mov	x16, SYS_select
@@ -34,11 +32,10 @@ _start:
 	mov	x0, xzr
 	svc	0
 
-	mov	x16, SYS_gettimeofday
-	mov	x2, xzr
-	mov	x1, xzr
 	add	x0, x17, 16
-	svc	0
+	mrs	x1, cntfrq_el0
+	mrs	x2, cntvct_el0
+	bl	timeval_from_cntvct
 
 	// itoa start time (timeval::tv_sec and timeval::tv_usec)
 	ldr	x1, [x17]
