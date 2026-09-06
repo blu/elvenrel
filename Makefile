@@ -10,7 +10,7 @@ CXXFLAGS += -std=c++11 -Ofast -fno-exceptions -fno-rtti -DNDEBUG -DPAGE_SIZE=$(s
 ifeq ($(UNAME), Linux)
 
 ifneq ($(UNAME_M), aarch64)
-	$(error unsupported arch)
+$(error unsupported arch)
 endif
 
 # Update state for linux/aarch64
@@ -21,7 +21,7 @@ TEST_SUBDIR := test_linux
 else ifeq ($(UNAME), Darwin)
 
 ifneq ($(UNAME_M), arm64)
-	$(error unsupported arch)
+$(error unsupported arch)
 endif
 
 # Update state for macos/arm64
@@ -30,7 +30,7 @@ LDFLAGS += /opt/homebrew/lib/libelf.a
 TEST_SUBDIR := test_macos
 
 else # unsupported os
-	$(error unsupposrted os)
+$(error unsupposrted os)
 endif
 
 OBJ := $(addsuffix .o, $(basename $(filter %.s %.c %.cpp, $(SOURCE))))
