@@ -38,11 +38,11 @@ OBJ := $(addsuffix .o, $(basename $(filter %.s %.c %.cpp, $(SOURCE))))
 $(TARGET): $(OBJ)
 	$(CC) $^ $(LDFLAGS) -o $(TARGET)
 
-reloc.o: reloc.c vma.h char_ptr_arr.h
+reloc.o: reloc.c vma.h
 
 reloc_add_aarch64.o: reloc_add_aarch64.c insn.h
 
-vma.o: vma.cpp vma.h char_ptr_arr.h
+vma.o: vma.cpp vma.h
 
 all: $(TARGET)
 	$(MAKE) -C test_common all

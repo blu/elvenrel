@@ -20,9 +20,7 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 
-#if __APPLE__ != 0
-#include "char_ptr_arr.h"
-#else
+#if __linux__ != 0
 #include "vma.h"
 #endif
 
